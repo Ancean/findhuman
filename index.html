@@ -2544,11 +2544,11 @@
         if (item.author === testSuite.humanAuthor) {
             tagElement.textContent = "正确答案";
         } else if (modelGuess === item.author) {
-            tagElement.textContent = `模型命中 +${MODEL_SCORE_PER_ITEM}`;
+            tagElement.textContent = `AI识别 +${AI_JUDGMENT_SCORE_PER_ITEM} / 模型命中 +${MODEL_SCORE_PER_ITEM}`;
         } else if (modelGuess) {
-            tagElement.textContent = `你猜：${getAuthorLabel(modelGuess)}`;
+            tagElement.textContent = `AI识别 +${AI_JUDGMENT_SCORE_PER_ITEM} / 你猜：${getAuthorLabel(modelGuess)}`;
         } else {
-            tagElement.textContent = "未猜模型";
+            tagElement.textContent = `AI识别 +${AI_JUDGMENT_SCORE_PER_ITEM} / 未猜模型`;
         }
 
         const evidenceElement = document.createElement("span");
@@ -2619,10 +2619,12 @@
         });
 
         const suiteCount = scoreResults.length;
+        const aiCorrectCount = scoreResults.reduce((sum, result) => sum + result.score.aiCorrectCount, 0);
         return {
             suiteCount,
             totalScore,
             humanCorrectCount,
+            aiCorrectCount,
             modelCorrectCount,
             totalAiCount,
             humanMissCount,
@@ -2642,33 +2644,35 @@
      * @returns {object} 命中的结局定义。
      */
     function getEndingResult(metrics) {
-        const halfSuiteThreshold = Math.max(1, Math.ceil(metrics.suiteCount * 0.5));
         const sabotageThreshold = Math.max(1, Math.ceil(metrics.suiteCount * 0.6));
         if (metrics.secondRun && metrics.humanMissCount >= sabotageThreshold && metrics.modelRatio >= 0.5) {
             return ENDING_DEFINITIONS.prometheus;
         }
-        if (metrics.humanRatio === 1 && metrics.modelRatio === 1) {
+        if (
+            (metrics.totalScore >= 50 && metrics.humanCorrectCount >= 2) ||
+            (metrics.humanCorrectCount >= 4 && metrics.modelCorrectCount >= 3)
+        ) {
             return ENDING_DEFINITIONS.perfect;
         }
-        if (metrics.humanRatio >= 0.75 && metrics.humanEvidenceHitCount >= halfSuiteThreshold) {
+        if (metrics.humanCorrectCount >= 3 && metrics.humanEvidenceHitCount >= 1 && metrics.modelCorrectCount <= 3) {
             return ENDING_DEFINITIONS.traceScholar;
         }
-        if (metrics.humanRatio >= 0.75 && metrics.modelRatio >= 0.75) {
+        if (metrics.humanCorrectCount >= 2 && metrics.modelCorrectCount >= 4 && metrics.aiCorrectCount >= 11) {
             return ENDING_DEFINITIONS.dismantler;
         }
-        if (metrics.humanRatio === 1) {
+        if (metrics.humanCorrectCount >= 3) {
             return ENDING_DEFINITIONS.locator;
         }
-        if (metrics.humanRatio >= 0.5 && metrics.modelRatio >= 0.75) {
-            return ENDING_DEFINITIONS.modelForensic;
-        }
-        if (metrics.humanRatio < 0.5 && metrics.humanAiEvidenceMisreadCount >= halfSuiteThreshold) {
-            return ENDING_DEFINITIONS.overfit;
-        }
-        if (metrics.humanRatio < 0.5 && metrics.modelRatio >= 0.5) {
+        if (metrics.humanCorrectCount <= 1 && metrics.modelCorrectCount >= 4) {
             return ENDING_DEFINITIONS.falseAlarm;
         }
-        if (metrics.scoreRatio >= 0.6) {
+        if (metrics.humanCorrectCount >= 2 && metrics.modelCorrectCount >= 3) {
+            return ENDING_DEFINITIONS.modelForensic;
+        }
+        if (metrics.humanCorrectCount <= 2 && metrics.humanAiEvidenceMisreadCount >= 2) {
+            return ENDING_DEFINITIONS.overfit;
+        }
+        if (metrics.totalScore >= 30 || metrics.humanCorrectCount >= 2) {
             return ENDING_DEFINITIONS.patrol;
         }
         return ENDING_DEFINITIONS.blank;
@@ -2804,7 +2808,12 @@
         if (targetSuiteIndex < 0 || targetSuiteIndex >= TEST_SUITES.length || targetSuiteIndex === state.currentSuiteIndex) {
             return;
         }
+        const sourceAttempt = getCurrentAttempt();
+        const sourceIndex = sourceAttempt.currentIndex;
         state.currentSuiteIndex = targetSuiteIndex;
+        const targetAttempt = getCurrentAttempt();
+        targetAttempt.currentIndex = Math.min(sourceIndex, targetAttempt.items.length - 1);
+        targetAttempt.visitedIndices.add(targetAttempt.currentIndex);
         renderState();
         if (window.innerWidth <= 980) {
             window.scrollTo({ top: 0, behavior: "smooth" });
