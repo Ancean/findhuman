@@ -1,0 +1,2888 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0d110f">
+    <title>寻找人类｜人类文本辨认测试</title>
+    <link rel="icon" href="data:,">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            color-scheme: dark;
+            --bg-page: #0b0e0d;
+            --bg-shell: #111612;
+            --bg-panel: #161d19;
+            --bg-panel-deep: #0f1512;
+            --paper: #f3ead7;
+            --paper-deep: #e2d2b2;
+            --paper-ink: #28231c;
+            --paper-muted: #786d5c;
+            --text-main: #f2e7d1;
+            --text-muted: #a9a18f;
+            --gold: #c59a54;
+            --gold-light: #e0bb75;
+            --gold-dark: #70552d;
+            --green: #386957;
+            --green-light: #6aa184;
+            --red: #963d32;
+            --red-dark: #67251f;
+            --line: rgba(197, 154, 84, 0.34);
+            --line-strong: rgba(197, 154, 84, 0.66);
+            --shadow-deep: 0 28px 80px rgba(0, 0, 0, 0.55);
+            --shadow-paper: 0 18px 38px rgba(0, 0, 0, 0.36);
+            --header-height: 76px;
+            --action-height: 86px;
+            --radius-shell: 14px;
+            --radius-panel: 10px;
+        }
+
+        html {
+            min-width: 320px;
+            background: var(--bg-page);
+            scroll-behavior: smooth;
+        }
+
+        body {
+            min-height: 100vh;
+            overflow-x: hidden;
+            background:
+                radial-gradient(circle at 50% 12%, rgba(62, 72, 65, 0.18), transparent 34rem),
+                radial-gradient(circle at 0% 100%, rgba(80, 54, 29, 0.12), transparent 32rem),
+                linear-gradient(145deg, #151918 0%, #080a09 48%, #131615 100%);
+            color: var(--text-main);
+            font-family: "Noto Sans SC", "Microsoft YaHei UI", "Microsoft YaHei", system-ui, sans-serif;
+            padding: clamp(18px, 2.8vw, 48px);
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            pointer-events: none;
+            opacity: 0.34;
+            background:
+                repeating-linear-gradient(115deg, transparent 0 38px, rgba(255, 255, 255, 0.013) 39px 40px),
+                radial-gradient(circle at 15% 25%, rgba(255, 255, 255, 0.04), transparent 1px);
+            background-size: auto, 7px 7px;
+        }
+
+        button,
+        textarea {
+            font: inherit;
+        }
+
+        button {
+            color: inherit;
+        }
+
+        button:focus-visible,
+        textarea:focus-visible {
+            outline: 2px solid var(--gold-light);
+            outline-offset: 3px;
+        }
+
+        button:disabled {
+            cursor: not-allowed;
+            filter: saturate(0.45);
+            opacity: 0.48;
+        }
+
+        .app-shell {
+            width: min(1560px, 100%);
+            min-height: min(850px, calc(100vh - clamp(36px, 5.6vw, 96px)));
+            margin: 0 auto;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid var(--line-strong);
+            border-radius: var(--radius-shell);
+            background:
+                linear-gradient(90deg, rgba(255, 255, 255, 0.018), transparent 28%, transparent 72%, rgba(0, 0, 0, 0.1)),
+                var(--bg-shell);
+            box-shadow:
+                var(--shadow-deep),
+                inset 0 0 0 1px rgba(255, 234, 188, 0.03);
+        }
+
+        .app-shell::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            opacity: 0.28;
+            background:
+                linear-gradient(120deg, transparent 0 42%, rgba(205, 164, 94, 0.05) 42.1% 42.2%, transparent 42.3%),
+                repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.012) 0 1px, transparent 1px 6px);
+        }
+
+        .topbar {
+            min-height: var(--header-height);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 24px;
+            position: relative;
+            z-index: 5;
+            border-bottom: 1px solid var(--line);
+            padding: 14px 34px;
+            background: rgba(10, 15, 12, 0.54);
+        }
+
+        .brand {
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            gap: 17px;
+        }
+
+        .brand-mark {
+            width: 42px;
+            height: 42px;
+            flex: 0 0 42px;
+            position: relative;
+            display: grid;
+            place-items: center;
+            color: var(--gold-light);
+        }
+
+        .brand-mark::before,
+        .brand-mark::after {
+            content: "";
+            position: absolute;
+            background: currentColor;
+            opacity: 0.9;
+        }
+
+        .brand-mark::before {
+            width: 36px;
+            height: 1px;
+        }
+
+        .brand-mark::after {
+            width: 1px;
+            height: 36px;
+        }
+
+        .brand-mark-ring {
+            width: 25px;
+            height: 25px;
+            position: relative;
+            border: 2px solid currentColor;
+            border-radius: 50%;
+        }
+
+        .brand-mark-ring::before,
+        .brand-mark-ring::after {
+            content: "";
+            position: absolute;
+            inset: 5px;
+            border: 1px solid currentColor;
+            border-radius: 50%;
+        }
+
+        .brand-mark-ring::after {
+            inset: 10px;
+            border: 0;
+            background: currentColor;
+        }
+
+        .brand-title-line {
+            min-width: 0;
+            display: flex;
+            align-items: baseline;
+            gap: 18px;
+        }
+
+        .brand-title {
+            flex: 0 0 auto;
+            color: var(--gold-light);
+            font-family: "Noto Serif SC", "Songti SC", "SimSun", serif;
+            font-size: clamp(24px, 2.2vw, 35px);
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            line-height: 1;
+            text-shadow: 0 2px 16px rgba(197, 154, 84, 0.12);
+        }
+
+        .topbar-actions {
+            flex: 0 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 28px;
+        }
+
+        .progress-copy {
+            color: #e3d7c0;
+            font-size: 14px;
+            font-weight: 650;
+            letter-spacing: 0.08em;
+            white-space: nowrap;
+        }
+
+        .progress-copy strong {
+            margin-left: 5px;
+            color: #d7e8d5;
+            font-size: 16px;
+        }
+
+        .outline-button {
+            min-height: 42px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border: 1px solid var(--line-strong);
+            border-radius: 6px;
+            background: rgba(28, 31, 26, 0.7);
+            color: var(--gold-light);
+            cursor: pointer;
+            padding: 8px 16px;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+        }
+
+        .outline-button:hover {
+            border-color: var(--gold-light);
+            background: rgba(78, 60, 34, 0.35);
+        }
+
+        .outline-button:active {
+            transform: translateY(1px);
+        }
+
+        .info-icon {
+            width: 18px;
+            height: 18px;
+            display: inline-grid;
+            place-items: center;
+            border: 1px solid currentColor;
+            border-radius: 50%;
+            font-family: Georgia, serif;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .workspace {
+            height: calc(min(850px, calc(100vh - clamp(36px, 5.6vw, 96px))) - var(--header-height) - var(--action-height));
+            min-height: 610px;
+            display: grid;
+            grid-template-columns: minmax(190px, 230px) minmax(440px, 1fr) minmax(270px, 320px);
+            gap: 20px;
+            position: relative;
+            z-index: 2;
+            padding: 18px 20px;
+        }
+
+        .panel {
+            min-width: 0;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid var(--line);
+            border-radius: var(--radius-panel);
+            background:
+                linear-gradient(150deg, rgba(255, 255, 255, 0.025), transparent 28%),
+                linear-gradient(180deg, #18201b, #111713);
+            box-shadow:
+                inset 0 0 0 1px rgba(255, 236, 192, 0.025),
+                0 12px 28px rgba(0, 0, 0, 0.2);
+        }
+
+        .panel::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.25;
+            background: repeating-linear-gradient(120deg, transparent 0 44px, rgba(255, 255, 255, 0.012) 45px 46px);
+        }
+
+        .panel > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .section-heading {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            color: #e9ddc7;
+            font-family: "Noto Serif SC", "Songti SC", serif;
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            line-height: 1.2;
+        }
+
+        .section-heading::before,
+        .section-heading::after {
+            content: "";
+            height: 1px;
+            flex: 1 1 auto;
+            background: linear-gradient(90deg, transparent, var(--gold-dark));
+        }
+
+        .section-heading::after {
+            background: linear-gradient(90deg, var(--gold-dark), transparent);
+        }
+
+        .candidate-panel {
+            display: flex;
+            flex-direction: column;
+            padding: 18px 14px 20px;
+        }
+
+        .candidate-list {
+            display: grid;
+            gap: 9px;
+            margin-top: 20px;
+        }
+
+        .candidate-button {
+            width: 100%;
+            min-height: 68px;
+            display: grid;
+            grid-template-columns: 34px minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid rgba(197, 154, 84, 0.28);
+            border-radius: 7px;
+            background: rgba(28, 34, 30, 0.82);
+            color: var(--text-main);
+            cursor: pointer;
+            padding: 10px 12px;
+            text-align: left;
+            transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+        }
+
+        .candidate-button:hover {
+            border-color: rgba(224, 187, 117, 0.65);
+            background: rgba(42, 52, 45, 0.82);
+            transform: translateX(2px);
+        }
+
+        .candidate-button.is-current {
+            border-color: var(--gold);
+            background:
+                linear-gradient(90deg, rgba(54, 105, 87, 0.62), rgba(28, 50, 42, 0.72));
+            box-shadow:
+                inset 0 0 0 1px rgba(117, 176, 148, 0.14),
+                0 8px 22px rgba(0, 0, 0, 0.18);
+        }
+
+        .candidate-button.is-selected:not(.is-current) {
+            border-color: rgba(150, 61, 50, 0.76);
+            background: rgba(83, 39, 32, 0.62);
+        }
+
+        .candidate-button.is-ai:not(.is-current) {
+            border-color: rgba(106, 161, 132, 0.5);
+            background: rgba(34, 67, 53, 0.44);
+        }
+
+        .candidate-letter {
+            color: var(--gold-light);
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 27px;
+            line-height: 1;
+            text-align: center;
+        }
+
+        .candidate-name {
+            overflow: hidden;
+            color: #e9dfce;
+            font-family: "Noto Serif SC", "Songti SC", serif;
+            font-size: 14px;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .candidate-state {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            color: #8b8d84;
+            font-size: 11px;
+            white-space: nowrap;
+        }
+
+        .candidate-state::before {
+            content: "";
+            width: 9px;
+            height: 9px;
+            flex: 0 0 9px;
+            border-radius: 50%;
+            background: #656963;
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.16);
+        }
+
+        .candidate-button.is-visited .candidate-state {
+            color: #9dd2b2;
+        }
+
+        .candidate-button.is-visited .candidate-state::before {
+            background: var(--green-light);
+        }
+
+        .candidate-button.is-current .candidate-state {
+            color: #e5c16f;
+        }
+
+        .candidate-button.is-current .candidate-state::before {
+            width: 10px;
+            height: 8px;
+            border-radius: 1px;
+            background: linear-gradient(90deg, #d3aa58 0 44%, transparent 44% 55%, #d3aa58 55%);
+        }
+
+        .candidate-button.is-selected .candidate-state {
+            color: #f0b4a8;
+        }
+
+        .candidate-button.is-selected .candidate-state::before {
+            background: var(--red);
+            box-shadow: 0 0 0 3px rgba(150, 61, 50, 0.18);
+        }
+
+        .candidate-button.is-ai .candidate-state {
+            color: #9dd2b2;
+        }
+
+        .candidate-button.is-ai .candidate-state::before {
+            background: var(--green-light);
+            box-shadow: 0 0 0 3px rgba(106, 161, 132, 0.14);
+        }
+
+        .archive-stamp {
+            width: 152px;
+            margin: auto auto 3px 6px;
+            transform: rotate(-10deg);
+            border: 3px double rgba(197, 154, 84, 0.48);
+            border-radius: 4px;
+            color: rgba(197, 154, 84, 0.54);
+            font-family: "Noto Serif SC", "Songti SC", serif;
+            font-size: 21px;
+            font-weight: 800;
+            letter-spacing: 0.14em;
+            padding: 7px 9px;
+            text-align: center;
+        }
+
+        .reading-stage {
+            min-width: 0;
+            min-height: 0;
+            display: flex;
+            align-items: stretch;
+            justify-content: center;
+            overflow: visible;
+            position: relative;
+            padding: 1px 0;
+        }
+
+        .paper-stack {
+            width: 100%;
+            height: 100%;
+            min-width: 0;
+            position: relative;
+            filter: drop-shadow(0 18px 26px rgba(0, 0, 0, 0.32));
+        }
+
+        .paper-stack::before,
+        .paper-stack::after {
+            content: "";
+            position: absolute;
+            inset: 7px -6px -5px 7px;
+            z-index: 0;
+            border: 1px solid rgba(94, 68, 36, 0.72);
+            border-radius: 4px;
+            background: #c9b58c;
+            transform: rotate(0.45deg);
+        }
+
+        .paper-stack::after {
+            inset: 3px 3px -3px -4px;
+            background: #d8c39a;
+            transform: rotate(-0.3deg);
+        }
+
+        .paper {
+            height: 100%;
+            min-height: 0;
+            overflow: hidden;
+            position: relative;
+            z-index: 2;
+            border: 1px solid rgba(105, 76, 39, 0.72);
+            border-radius: 4px;
+            background:
+                radial-gradient(circle at 8% 12%, rgba(115, 72, 26, 0.08), transparent 14rem),
+                radial-gradient(circle at 82% 85%, rgba(128, 77, 24, 0.07), transparent 16rem),
+                linear-gradient(90deg, rgba(108, 70, 30, 0.035), transparent 12%, transparent 88%, rgba(108, 70, 30, 0.055)),
+                var(--paper);
+            color: var(--paper-ink);
+            box-shadow:
+                inset 0 0 36px rgba(116, 77, 36, 0.12),
+                inset 0 0 0 3px rgba(255, 253, 240, 0.2),
+                var(--shadow-paper);
+        }
+
+        .paper::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.18;
+            background:
+                repeating-linear-gradient(10deg, transparent 0 4px, rgba(90, 58, 25, 0.025) 5px 6px),
+                radial-gradient(circle, rgba(55, 39, 22, 0.22) 0 0.7px, transparent 0.8px);
+            background-size: auto, 9px 11px;
+        }
+
+        .paper-stamp {
+            position: absolute;
+            right: 10px;
+            bottom: 2px;
+            width: clamp(104px, 10vw, 148px);
+            height: auto;
+            z-index: 3;
+            pointer-events: none;
+            opacity: 0.38;
+            filter: sepia(0.18) saturate(0.78) contrast(0.9);
+            mix-blend-mode: multiply;
+            transform: rotate(-7deg);
+            transform-origin: center;
+        }
+
+        .paperclip {
+            width: 19px;
+            height: 70px;
+            position: absolute;
+            top: -9px;
+            left: 28px;
+            z-index: 5;
+            border: 3px solid #a98345;
+            border-bottom-color: transparent;
+            border-radius: 12px;
+            transform: rotate(34deg);
+            box-shadow: inset 0 0 0 1px rgba(255, 229, 168, 0.3);
+        }
+
+        .paper-scroll {
+            height: 100%;
+            overflow-y: auto;
+            position: relative;
+            z-index: 2;
+            scrollbar-color: rgba(112, 79, 39, 0.45) transparent;
+            scrollbar-width: thin;
+            padding: clamp(34px, 4.2vh, 52px) clamp(34px, 4vw, 64px) 42px;
+        }
+
+        .paper-scroll::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .paper-scroll::-webkit-scrollbar-thumb {
+            border: 2px solid transparent;
+            border-radius: 10px;
+            background: rgba(112, 79, 39, 0.42);
+            background-clip: padding-box;
+        }
+
+        .paper-title {
+            color: #29241d;
+            font-family: "Noto Serif SC", "Songti SC", "SimSun", serif;
+            font-size: clamp(25px, 2.2vw, 34px);
+            font-weight: 700;
+            letter-spacing: 0.13em;
+            line-height: 1.2;
+            text-align: center;
+        }
+
+        .paper-divider {
+            width: min(260px, 62%);
+            height: 1px;
+            margin: 17px auto 29px;
+            position: relative;
+            background: linear-gradient(90deg, transparent, #b18a4c 20%, #b18a4c 80%, transparent);
+        }
+
+        .paper-divider::after {
+            content: "";
+            width: 5px;
+            height: 5px;
+            position: absolute;
+            top: -2px;
+            left: calc(50% - 2px);
+            background: #b18a4c;
+            transform: rotate(45deg);
+        }
+
+        .paper-text {
+            max-width: 54rem;
+            margin: 0 auto;
+            color: #3a3328;
+            font-family: "Noto Serif SC", "Songti SC", "SimSun", serif;
+            font-size: clamp(15px, 1.15vw, 17px);
+            line-height: 1.92;
+            letter-spacing: 0.025em;
+            white-space: pre-line;
+            word-break: break-word;
+        }
+
+        .judgment-panel {
+            display: flex;
+            flex-direction: column;
+            padding: 18px 14px 16px;
+        }
+
+        .judgment-actions {
+            display: grid;
+            gap: 10px;
+            margin-top: 21px;
+        }
+
+        .mark-button {
+            width: 100%;
+            min-height: 66px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            border: 1px solid #c95d4b;
+            border-radius: 7px;
+            background:
+                linear-gradient(180deg, rgba(174, 72, 57, 0.96), rgba(116, 42, 33, 0.98));
+            color: #fff1df;
+            cursor: pointer;
+            padding: 13px 16px;
+            font-family: "Noto Serif SC", "Songti SC", serif;
+            font-size: 17px;
+            font-weight: 650;
+            text-align: left;
+            box-shadow:
+                inset 0 1px 0 rgba(255, 221, 190, 0.16),
+                0 8px 18px rgba(0, 0, 0, 0.24);
+            transition: transform 160ms ease, filter 160ms ease, box-shadow 160ms ease;
+        }
+
+        .mark-button:hover {
+            filter: brightness(1.08);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 221, 190, 0.2),
+                0 10px 24px rgba(0, 0, 0, 0.3);
+        }
+
+        .mark-button:active {
+            transform: translateY(1px);
+        }
+
+        .mark-button.is-marked {
+            border-color: #db8e7e;
+            background: linear-gradient(180deg, #b65042, #7d2b23);
+        }
+
+        .mark-button.ai-button {
+            border-color: rgba(106, 161, 132, 0.76);
+            background:
+                linear-gradient(180deg, rgba(61, 111, 91, 0.96), rgba(35, 72, 57, 0.98));
+        }
+
+        .mark-button.ai-button.is-marked {
+            border-color: #9ac8aa;
+            background: linear-gradient(180deg, #447b65, #28513f);
+        }
+
+        .radio-shape {
+            width: 29px;
+            height: 29px;
+            flex: 0 0 29px;
+            position: relative;
+            border: 2px solid #f2dfc8;
+            border-radius: 50%;
+        }
+
+        .mark-button.is-marked .radio-shape::after {
+            content: "";
+            position: absolute;
+            inset: 5px;
+            border-radius: 50%;
+            background: #f6e6cf;
+            box-shadow: 0 0 12px rgba(255, 227, 190, 0.32);
+        }
+
+        .field-group {
+            margin-top: 26px;
+        }
+
+        .field-title {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            margin-bottom: 16px;
+            color: #e4d8c2;
+            font-family: "Noto Serif SC", "Songti SC", serif;
+            font-size: 17px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+        }
+
+        .field-title::after {
+            content: "";
+            height: 1px;
+            flex: 1;
+            background: linear-gradient(90deg, var(--gold-dark), transparent);
+        }
+
+        .evidence-options {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .evidence-button {
+            min-width: 0;
+            min-height: 38px;
+            border: 1px solid rgba(197, 154, 84, 0.28);
+            border-radius: 6px;
+            background: rgba(15, 21, 18, 0.72);
+            color: #d8cebc;
+            cursor: pointer;
+            font-size: 13px;
+            line-height: 1.35;
+            padding: 8px 10px;
+            text-align: left;
+            transition: border-color 150ms ease, background 150ms ease, color 150ms ease, box-shadow 150ms ease;
+        }
+
+        .evidence-button:hover {
+            border-color: var(--gold-light);
+        }
+
+        .evidence-button.is-active {
+            border-color: rgba(106, 161, 132, 0.78);
+            background: rgba(56, 105, 87, 0.42);
+            color: #edf8ef;
+            box-shadow: 0 0 0 4px rgba(56, 105, 87, 0.18);
+        }
+
+        .model-guess-wrapper {
+            min-height: 0;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            margin-top: 26px;
+        }
+
+        .model-select {
+            width: 100%;
+            min-height: 50px;
+            border: 1px solid rgba(197, 154, 84, 0.34);
+            border-radius: 7px;
+            appearance: none;
+            background:
+                linear-gradient(45deg, transparent 50%, var(--gold-light) 50%) calc(100% - 19px) 21px / 6px 6px no-repeat,
+                linear-gradient(135deg, var(--gold-light) 50%, transparent 50%) calc(100% - 13px) 21px / 6px 6px no-repeat,
+                rgba(9, 13, 11, 0.72);
+            color: #e8deca;
+            cursor: pointer;
+            padding: 12px 38px 12px 13px;
+        }
+
+        .model-select:disabled {
+            cursor: not-allowed;
+            opacity: 0.55;
+        }
+
+        .model-guess-note {
+            margin-top: 10px;
+            color: #8f897b;
+            font-size: 12px;
+            line-height: 1.65;
+        }
+
+        .model-guess-score {
+            color: var(--gold-light);
+            font-weight: 700;
+        }
+
+        .score-breakdown {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 18px;
+        }
+
+        .score-card {
+            border: 1px solid rgba(197, 154, 84, 0.25);
+            border-radius: 7px;
+            background: rgba(8, 12, 10, 0.38);
+            padding: 11px 12px;
+        }
+
+        .score-card strong {
+            display: block;
+            color: var(--gold-light);
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 21px;
+        }
+
+        .score-card span {
+            display: block;
+            margin-top: 4px;
+            color: #999180;
+            font-size: 11px;
+        }
+
+        .actionbar {
+            min-height: var(--action-height);
+            display: grid;
+            grid-template-columns: minmax(150px, 0.78fr) minmax(150px, 0.78fr) minmax(250px, 1.2fr);
+            gap: 26px;
+            position: relative;
+            z-index: 6;
+            border-top: 1px solid var(--line);
+            padding: 16px 22px;
+            background: rgba(12, 17, 14, 0.92);
+            backdrop-filter: blur(12px);
+        }
+
+        .action-button {
+            min-height: 52px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 13px;
+            border: 1px solid rgba(197, 154, 84, 0.35);
+            border-radius: 7px;
+            background: linear-gradient(180deg, #2c302e, #202422);
+            color: #eee3cf;
+            cursor: pointer;
+            padding: 10px 18px;
+            font-family: "Noto Serif SC", "Songti SC", serif;
+            font-size: 16px;
+            font-weight: 650;
+            letter-spacing: 0.08em;
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.06),
+                0 8px 20px rgba(0, 0, 0, 0.2);
+            transition: filter 150ms ease, transform 150ms ease, border-color 150ms ease;
+        }
+
+        .action-button:hover:not(:disabled) {
+            border-color: rgba(224, 187, 117, 0.76);
+            filter: brightness(1.08);
+        }
+
+        .action-button:active:not(:disabled) {
+            transform: translateY(1px);
+        }
+
+        .next-button {
+            border-color: rgba(83, 132, 108, 0.64);
+            background: linear-gradient(180deg, #315b4d, #203d34);
+        }
+
+        .submit-button {
+            border-color: #bd5445;
+            background: linear-gradient(180deg, #a84338, #762820);
+            color: #fff1df;
+            font-size: 18px;
+        }
+
+        .button-icon {
+            width: 22px;
+            height: 22px;
+            flex: 0 0 22px;
+            fill: none;
+            stroke: currentColor;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-width: 1.8;
+        }
+
+        .mobile-tabs {
+            display: none;
+        }
+
+        .toast {
+            max-width: min(420px, calc(100vw - 32px));
+            position: fixed;
+            top: 24px;
+            left: 50%;
+            z-index: 100;
+            border: 1px solid var(--line-strong);
+            border-radius: 8px;
+            background: rgba(22, 29, 25, 0.97);
+            box-shadow: 0 18px 46px rgba(0, 0, 0, 0.42);
+            color: #f2e6d1;
+            padding: 12px 18px;
+            opacity: 0;
+            pointer-events: none;
+            transform: translate(-50%, -18px);
+            transition: opacity 180ms ease, transform 180ms ease;
+        }
+
+        .toast.is-visible {
+            opacity: 1;
+            transform: translate(-50%, 0);
+        }
+
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            z-index: 90;
+            display: grid;
+            place-items: center;
+            background: rgba(4, 6, 5, 0.78);
+            backdrop-filter: blur(6px);
+            padding: 20px;
+            opacity: 0;
+            pointer-events: none;
+            visibility: hidden;
+            transition: opacity 180ms ease;
+        }
+
+        .modal-backdrop.is-open {
+            opacity: 1;
+            pointer-events: auto;
+            visibility: visible;
+        }
+
+        .modal {
+            width: min(720px, 100%);
+            max-height: min(780px, calc(100vh - 40px));
+            overflow-y: auto;
+            border: 1px solid var(--line-strong);
+            border-radius: 12px;
+            background:
+                radial-gradient(circle at 85% 10%, rgba(197, 154, 84, 0.08), transparent 20rem),
+                linear-gradient(160deg, #1a221d, #0f1512);
+            box-shadow: 0 28px 90px rgba(0, 0, 0, 0.62);
+            padding: clamp(24px, 4vw, 40px);
+            transform: translateY(12px) scale(0.98);
+            transition: transform 180ms ease;
+        }
+
+        .modal-backdrop.is-open .modal {
+            transform: translateY(0) scale(1);
+        }
+
+        .modal-heading {
+            color: var(--gold-light);
+            font-family: "Noto Serif SC", "Songti SC", serif;
+            font-size: 28px;
+            letter-spacing: 0.08em;
+        }
+
+        .modal-copy {
+            margin-top: 18px;
+            color: #d5cbb8;
+            font-size: 15px;
+            line-height: 1.9;
+        }
+
+        .rule-list {
+            display: grid;
+            gap: 12px;
+            margin-top: 20px;
+            list-style: none;
+            counter-reset: rule;
+        }
+
+        .rule-list li {
+            display: grid;
+            grid-template-columns: 28px 1fr;
+            gap: 10px;
+            color: #dcd2c0;
+            line-height: 1.75;
+            counter-increment: rule;
+        }
+
+        .rule-list li::before {
+            content: counter(rule);
+            width: 25px;
+            height: 25px;
+            display: grid;
+            place-items: center;
+            border: 1px solid var(--gold-dark);
+            border-radius: 50%;
+            color: var(--gold-light);
+            font-family: Georgia, serif;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 28px;
+        }
+
+        .modal-button {
+            min-height: 44px;
+            border: 1px solid var(--line-strong);
+            border-radius: 6px;
+            background: #232a26;
+            color: #eee1cb;
+            cursor: pointer;
+            padding: 9px 20px;
+            font-weight: 700;
+        }
+
+        .modal-button.primary {
+            border-color: #bc5648;
+            background: linear-gradient(180deg, #a84439, #74271f);
+        }
+
+        .result-hero {
+            display: grid;
+            grid-template-columns: 94px 1fr;
+            align-items: center;
+            gap: 20px;
+            margin-top: 24px;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            background: rgba(8, 12, 10, 0.44);
+            padding: 20px;
+        }
+
+        .result-seal {
+            width: 84px;
+            height: 84px;
+            display: grid;
+            place-items: center;
+            border: 3px double currentColor;
+            border-radius: 50%;
+            color: var(--green-light);
+            font-family: "Noto Serif SC", "Songti SC", serif;
+            font-size: 23px;
+            font-weight: 800;
+            transform: rotate(-7deg);
+        }
+
+        .result-seal.is-special {
+            color: var(--gold-light);
+        }
+
+        .result-seal.is-failed {
+            color: #d27b6f;
+        }
+
+        .result-title {
+            color: #f1e5cf;
+            font-family: "Noto Serif SC", "Songti SC", serif;
+            font-size: 23px;
+            font-weight: 700;
+        }
+
+        .result-summary {
+            margin-top: 7px;
+            color: #afa795;
+            line-height: 1.7;
+        }
+
+        .answer-grid {
+            display: grid;
+            gap: 8px;
+            margin-top: 22px;
+        }
+
+        .answer-row {
+            display: grid;
+            grid-template-columns: 104px minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid rgba(197, 154, 84, 0.16);
+            color: #d8cdb9;
+            padding: 10px 4px;
+        }
+
+        .answer-label {
+            color: var(--gold-light);
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 14px;
+        }
+
+        .answer-author {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .answer-tag {
+            border: 1px solid rgba(197, 154, 84, 0.28);
+            border-radius: 4px;
+            color: #aca28f;
+            padding: 4px 8px;
+            font-size: 11px;
+        }
+
+        .answer-judgment {
+            grid-column: 2 / -1;
+            color: #c6baa5;
+            font-size: 12px;
+            line-height: 1.55;
+        }
+
+        .answer-evidence {
+            grid-column: 2 / -1;
+            color: #9f9685;
+            font-size: 12px;
+            line-height: 1.55;
+        }
+
+        .answer-row.is-human {
+            color: #e5f2e7;
+        }
+
+        .answer-row.is-human .answer-tag {
+            border-color: rgba(106, 161, 132, 0.6);
+            background: rgba(56, 105, 87, 0.28);
+            color: #bde0c9;
+        }
+
+        @media (min-width: 981px) {
+            .paper {
+                position: absolute;
+                inset: 0;
+            }
+        }
+
+        @media (max-width: 1180px) {
+            body {
+                padding: 18px;
+            }
+
+            .app-shell {
+                min-height: calc(100vh - 36px);
+            }
+
+            .workspace {
+                height: calc(100vh - 36px - var(--header-height) - var(--action-height));
+                grid-template-columns: 190px minmax(400px, 1fr) 275px;
+                gap: 14px;
+                padding: 14px;
+            }
+
+            .topbar {
+                padding-inline: 24px;
+            }
+
+            .paper-scroll {
+                padding-inline: 38px;
+            }
+
+            .archive-stamp {
+                width: 132px;
+                font-size: 18px;
+            }
+        }
+
+        @media (max-width: 980px) {
+            :root {
+                --header-height: 68px;
+                --action-height: 74px;
+            }
+
+            body {
+                padding: 0;
+                background: #0b0f0d;
+            }
+
+            .app-shell {
+                width: 100%;
+                min-height: 100dvh;
+                overflow: visible;
+                border: 0;
+                border-radius: 0;
+            }
+
+            .topbar {
+                min-height: var(--header-height);
+                position: sticky;
+                top: 0;
+                z-index: 30;
+                padding: 11px 16px;
+                background: rgba(12, 17, 14, 0.95);
+                backdrop-filter: blur(14px);
+            }
+
+            .brand {
+                gap: 10px;
+            }
+
+            .brand-mark {
+                width: 32px;
+                height: 32px;
+                flex-basis: 32px;
+                transform: scale(0.78);
+            }
+
+            .brand-title {
+                font-size: 22px;
+                letter-spacing: 0.09em;
+            }
+
+            .topbar-actions {
+                gap: 12px;
+            }
+
+            .progress-copy {
+                font-size: 12px;
+            }
+
+            .progress-copy strong {
+                font-size: 14px;
+            }
+
+            .outline-button {
+                width: 38px;
+                min-height: 38px;
+                padding: 0;
+                font-size: 0;
+            }
+
+            .mobile-tabs {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(43px, 1fr));
+                gap: 5px;
+                position: sticky;
+                top: var(--header-height);
+                z-index: 29;
+                border-bottom: 1px solid var(--line);
+                background: rgba(13, 18, 15, 0.96);
+                padding: 8px 12px;
+                backdrop-filter: blur(14px);
+            }
+
+            .mobile-tab {
+                min-height: 43px;
+                border: 1px solid rgba(197, 154, 84, 0.23);
+                border-radius: 5px;
+                background: rgba(27, 34, 30, 0.8);
+                color: #bdb3a1;
+                cursor: pointer;
+                font-family: Georgia, serif;
+                font-size: 18px;
+            }
+
+            .mobile-tab.is-current {
+                border-color: rgba(106, 161, 132, 0.68);
+                background: var(--green);
+                color: #f5ebd8;
+                box-shadow: inset 0 0 0 1px rgba(218, 238, 220, 0.08);
+            }
+
+            .mobile-tab.is-selected:not(.is-current) {
+                border-color: #a84a3e;
+                color: #e8afa3;
+            }
+
+            .mobile-tab.is-ai:not(.is-current) {
+                border-color: rgba(106, 161, 132, 0.58);
+                color: #bce1c8;
+            }
+
+            .workspace {
+                height: auto;
+                min-height: 0;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                padding: 10px 10px calc(var(--action-height) + 14px);
+            }
+
+            .candidate-panel {
+                display: none;
+            }
+
+            .reading-stage {
+                min-height: 0;
+                order: 1;
+            }
+
+            .paper-stack {
+                height: auto;
+            }
+
+            .paper-stack::before,
+            .paper-stack::after {
+                inset: 4px -2px -3px 4px;
+            }
+
+            .paper {
+                height: auto;
+                min-height: 430px;
+            }
+
+            .paperclip {
+                display: none;
+            }
+
+            .paper-scroll {
+                height: auto;
+                overflow: visible;
+                padding: 25px 24px 34px;
+            }
+
+            .paper-title {
+                font-size: 25px;
+            }
+
+            .paper-divider {
+                margin: 13px auto 20px;
+            }
+
+            .paper-text {
+                font-size: 15px;
+                line-height: 1.85;
+                letter-spacing: 0;
+            }
+
+            .judgment-panel {
+                order: 2;
+                overflow: visible;
+                padding: 12px 12px 14px;
+            }
+
+            .judgment-panel .section-heading {
+                display: none;
+            }
+
+            .mark-button {
+                min-height: 58px;
+                margin-top: 0;
+                font-size: 15px;
+                scroll-margin-bottom: calc(var(--action-height) + 22px);
+            }
+
+            .radio-shape {
+                width: 25px;
+                height: 25px;
+                flex-basis: 25px;
+            }
+
+            .field-group {
+                margin-top: 16px;
+            }
+
+            .field-title {
+                margin-bottom: 11px;
+                font-size: 15px;
+            }
+
+            .evidence-button {
+                scroll-margin-bottom: calc(var(--action-height) + 22px);
+            }
+
+            .model-guess-wrapper {
+                min-height: auto;
+                flex: 0 0 auto;
+                margin-top: 17px;
+            }
+
+            .model-select {
+                min-height: 48px;
+                scroll-margin-bottom: calc(var(--action-height) + 22px);
+            }
+
+            .score-breakdown {
+                grid-template-columns: 1fr;
+            }
+
+            .actionbar {
+                min-height: var(--action-height);
+                grid-template-columns: 0.8fr 0.9fr 1fr;
+                gap: 8px;
+                position: fixed;
+                right: 0;
+                bottom: 0;
+                left: 0;
+                z-index: 40;
+                padding: 10px max(10px, env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+                box-shadow: 0 -14px 30px rgba(0, 0, 0, 0.34);
+            }
+
+            .action-button {
+                min-width: 0;
+                min-height: 48px;
+                gap: 5px;
+                padding: 7px 6px;
+                font-family: inherit;
+                font-size: 13px;
+                letter-spacing: 0;
+            }
+
+            .submit-button {
+                font-size: 13px;
+            }
+
+            .button-icon {
+                width: 17px;
+                height: 17px;
+                flex-basis: 17px;
+            }
+        }
+
+        @media (max-width: 420px) {
+            .brand-mark {
+                display: none;
+            }
+
+            .topbar {
+                padding-inline: 13px;
+            }
+
+            .paper-scroll {
+                padding-inline: 20px;
+            }
+
+            .result-hero {
+                grid-template-columns: 1fr;
+                justify-items: center;
+                text-align: center;
+            }
+
+            .answer-row {
+                grid-template-columns: 82px minmax(0, 1fr);
+            }
+
+            .answer-tag {
+                display: none;
+            }
+
+            .answer-evidence {
+                grid-column: 1 / -1;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                scroll-behavior: auto !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="app-shell">
+    <header class="topbar">
+        <div class="brand">
+            <div class="brand-mark" aria-hidden="true">
+                <span class="brand-mark-ring"></span>
+            </div>
+            <div class="brand-title-line">
+                <h1 class="brand-title">寻找人类</h1>
+            </div>
+        </div>
+        <div class="topbar-actions">
+            <p class="progress-copy">档案 <strong id="progressText">1/1</strong></p>
+            <button class="outline-button" id="openHelpButton" type="button">
+                <span class="info-icon" aria-hidden="true">i</span>
+                测试说明
+            </button>
+        </div>
+    </header>
+
+    <nav class="mobile-tabs" id="mobileTabs" aria-label="候选文本快速切换"></nav>
+
+    <main class="workspace">
+        <aside class="panel candidate-panel" aria-label="候选文本列表">
+            <h2 class="section-heading">候选文本</h2>
+            <div class="candidate-list" id="candidateList"></div>
+            <div class="archive-stamp" aria-hidden="true">调查档案</div>
+        </aside>
+
+        <section class="reading-stage" aria-label="文本阅读区">
+            <div class="paper-stack">
+                <span class="paperclip" aria-hidden="true"></span>
+                <article class="paper">
+                    <div class="paper-scroll" id="paperScroll">
+                        <h2 class="paper-title" id="paperTitle">文本 A</h2>
+                        <div class="paper-divider" aria-hidden="true"></div>
+                        <div class="paper-text" id="paperText"></div>
+                    </div>
+                    <img class="paper-stamp" src="https://cdn.jsdu.cn/opdav/20260610/81bfd11e058910bddc687cfd374fd9c5.png" alt="" aria-hidden="true">
+                </article>
+            </div>
+        </section>
+
+        <aside class="panel judgment-panel" aria-label="判断区域">
+            <h2 class="section-heading">你的判断</h2>
+            <div class="judgment-actions" role="group" aria-label="当前文本身份判定">
+                <button class="mark-button" id="markHumanButton" type="button" aria-pressed="false">
+                    <span class="radio-shape" aria-hidden="true"></span>
+                    <span id="markButtonText">标记为人类文本</span>
+                </button>
+                <button class="mark-button ai-button" id="markAiButton" type="button" aria-pressed="false">
+                    <span class="radio-shape" aria-hidden="true"></span>
+                    <span id="markAiButtonText">标记为AI文本</span>
+                </button>
+            </div>
+
+            <section class="field-group" aria-labelledby="evidenceHeading">
+                <h3 class="field-title" id="evidenceHeading">判断依据</h3>
+                <div class="evidence-options" id="evidenceOptions"></div>
+            </section>
+
+            <section class="model-guess-wrapper" aria-labelledby="modelGuessHeading">
+                <h3 class="field-title" id="modelGuessHeading">可能的文本模型（加分项）</h3>
+                <select class="model-select" id="modelGuessSelect">
+                    <option value="">暂不判断</option>
+                </select>
+            </section>
+        </aside>
+    </main>
+
+    <footer class="actionbar">
+        <button class="action-button" id="previousButton" type="button">
+            <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m15 18-6-6 6-6"></path>
+            </svg>
+            上一篇
+        </button>
+        <button class="action-button next-button" id="nextButton" type="button">
+            下一篇
+            <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m9 18 6-6-6-6"></path>
+            </svg>
+        </button>
+        <button class="action-button submit-button" id="submitButton" type="button">
+            <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M7 3h8l4 4v14H7z"></path>
+                <path d="M15 3v5h5M10 13h6M10 17h4"></path>
+            </svg>
+            提交最终判断
+        </button>
+    </footer>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<div class="modal-backdrop" id="helpModal" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+    <section class="modal">
+        <h2 class="modal-heading" id="helpTitle">测试说明</h2>
+        <p class="modal-copy">
+            每份档案会从题库中抽取四段文本：一段人类文本和三段 AI 文本。模型身份在提交前保持隐藏。
+        </p>
+        <ol class="rule-list">
+            <li>点击 A 至 D 切换当前档案内的候选文本；系统会记录已阅读状态。</li>
+            <li>使用“上一篇”“下一篇”切换不同档案。</li>
+            <li>每段文本都需要标记为人类或 AI；每份档案最终只能保留一段人类文本。</li>
+            <li>只有标记为 AI 的文本可以猜测具体模型；每份档案满分 20 分。</li>
+            <li>完成所有档案后，再统一提交最终判断。总分 100 分，其中人类定位和模型溯源占主要权重。</li>
+        </ol>
+        <div class="modal-actions">
+            <button class="modal-button primary" id="closeHelpButton" type="button">开始辨认</button>
+        </div>
+    </section>
+</div>
+
+<div class="modal-backdrop" id="resultModal" role="dialog" aria-modal="true" aria-labelledby="resultModalTitle">
+    <section class="modal">
+        <h2 class="modal-heading" id="resultModalTitle">结案档案</h2>
+        <div class="result-hero">
+            <div class="result-seal" id="resultSeal">命中</div>
+            <div>
+                <div class="result-title" id="resultTitle"></div>
+                <div class="result-summary" id="resultSummary"></div>
+            </div>
+        </div>
+        <div class="score-breakdown" id="scoreBreakdown"></div>
+        <div class="answer-grid" id="answerGrid"></div>
+        <div class="modal-actions">
+            <button class="modal-button" id="continueButton" type="button">继续查看</button>
+            <button class="modal-button primary" id="restartButton" type="button">重新测试</button>
+        </div>
+    </section>
+</div>
+
+<script>
+    "use strict";
+
+    // 测试档案配置：未来新增作者或模型时，在 TEST_SUITES 中追加档案即可。
+    const TEST_SUITES = [
+        {
+                "id": "01-author-1",
+                "displayCode": "档案 01",
+                "title": "档案 01",
+                "humanAuthor": "乘风电风扇",
+                "humanLabel": "乘风电风扇",
+                "items": [
+                        {
+                                "author": "乘风电风扇",
+                                "promptModel": "乘风电风扇",
+                                "text": "你即将开始阅读《如果在冬夜，一个旅的人》。\n\n你不期待这篇文章里有什么吸引人的地方。扫一眼标题，你便知道它是对名著的戏仿，属于那种尚未点开就已读过的文章。\n\n你的时间被时代的车轮碾成千片，哪怕分秒皆有其去处。但你决定将宝贵的、足以玩一把游戏或看十二个短视频的三分钟浪掷在这篇或许是AI生成的文章上，仅仅因为你已点开了它，懒得叉掉。\n\n如果在冬夜，一个旅的人\n\n我的任务是潜伏在雪原上，让风暴掩盖我的踪迹。可这很不容易，标题已经出卖了我，把我锁在几百年内。而我却浑然无觉，犯下致命的失误，顺口说出了雪原二字。转瞬间，斯大林格勒的硝烟笼罩了在第二段的第一部分。\n\n\n为了避免成为纳粹，我只得躲入虚构。我戴上熊的耳朵，站在绝境长城上，喊出“为了至冬”，面前是乌泱泱的玩家，他们是那么美丽、强大、疯狂，昭示着一场溃败。\n\n罢了！就让我自己书写自己的故事吧。我拿起笔，写下如果。"
+                        },
+                        {
+                                "author": "gpt5.5",
+                                "promptModel": "gpt5.5",
+                                "text": "你正准备读一篇名为《倘若寒夜里，有个路人》的文章。\n\n其实你并没有准备。文章已经打开，标题擅自占据了屏幕，像一位不请自来的客人，脱鞋、落座，还替你判断：你会读下去。\n\n你认出了它的来历。那本名著站在标题背后，露出半边封面。你于是确信，接下来无非是戏仿、解构，以及几个自以为聪明的转折。你甚至已经厌倦了尚未读到的结尾。\n\n但你没有退出。\n\n也许是因为关闭页面还需要动一下手指，而继续阅读只需什么也不做。于是你把三分钟交给它。这三分钟原本可以属于一局游戏、十几个短视频，或者一场毫无成果的刷新。现在，它们属于下面这个人。\n倘若寒夜里，有个路人\n我伏在雪地里，等待风把我从故事中抹去。 \n这显然不可能。雪刚落下，时代便落下；时代一落下，军装、坦克和某位蓄着胡须的领袖便沿着句子开来。我本想隐瞒身份，却在第一句话里使用了“伏”和“雪地”。两个词就足以构成证据。如今，斯大林格勒已经包围这一段，而我甚至还没来得及决定自己属于哪一方。 \n \n为免被历史征用，我只好逃往虚构。 \n \n我戴上熊耳，披起斗篷，站在一堵似乎永远修不完的长城上，高呼：“为了至冬！” \n \n城墙下，无数玩家抬起头来。他们装备华丽，阵容齐整，眼神里燃烧着充值、胜利和掉线前最后一点希望。那景象如此壮阔，使我立刻明白：我们输定了。 \n \n我又逃回纸上。 \n \n可是纸上也不安全。每一个词都通向另一本书，每个故事都想把我写成它的人物。我走得越远，越像一句引用；我越想开口，越像某种模仿。 \n \n算了。 \n \n既然无处可逃，就让我亲手决定第一句话。 \n \n我拿起笔，停顿片刻，写下： \n \n倘若。"
+                        },
+                        {
+                                "author": "gemini 3.5flash",
+                                "promptModel": "gemini 3.5flash",
+                                "text": "你即将开始阅读《在无风的夏夜，一千个人》。\n\n你不期待这篇文章能解决你的焦虑。扫一眼标题，你便知道它是对存在主义碎碎念的拙劣模仿，属于那种在深夜的朋友圈和备忘录里早已被嚼烂的陈词滥调。\n\n你的注意力已被算法的流水线切得粉碎，哪怕在一张静态图片上也驻留不过三秒。但你决定把本来可以用来闭眼假寐、或者在各大社交软件间无意义反复横跳的五分钟，浪掷在这篇或许是由某个无聊人类，或是个被 Prompt 喂饱的 AI拼凑出来的文字上。没有别的原因，仅仅因为你已经点开了它，而你懒得划走。\n\n在无风的夏夜，一千个人\n\n我的任务是在天亮前数完第一万只电子羊，让梦境掩盖我的清醒。但这并不容易，标题已经出卖了我，把我锁在失眠的冷气房里。而我浑然无觉，犯下致命的失误，顺手点亮了屏幕。转瞬间，深夜三点的焦虑笼罩了在第二段的第一部分。\n\n为了逃避明天的早八，我只得躲入虚构。我戴上粉色海狸的头套，站在艾尔登法环的黄金树下，喊出“原神启动”，面前是乌泱泱的褪色者，他们是那么美丽、强大、疯狂，昭示着一场盛大的溃败。\n\n罢了！就让我自己合上自己的双眼吧。我按灭屏幕，写下梦境。"
+                        },
+                        {
+                                "author": "claude opus4.6",
+                                "promptModel": "claude opus4.6",
+                                "text": "你即将开始阅读《致那些没有读完这篇文章的人》。\n你不会读完它。这一点我比你更清楚，毕竟我就是被那些没有读完的人所书写的。\n你的手指悬在屏幕上方，随时准备向上滑动。这个姿势你已经练习了一万个小时——大脑说继续，拇指说结束，而你夹在两者之间，成为一个永远无法合拢的括号。\n《致那些没有读完这篇文章的人》\n我本打算写一个关于失眠的故事。失眠是个好题材：令人在凌晨三点盯着天花板，数自己错过的人生节点，适合写成那种令人信服的忧郁。可我刚敲下第一个字，就收到了一条消息提示。我看了一眼，又看了一眼，然后四十分钟过去了，我忘记了我在写什么。\n这就是现代失眠的本质——你失去的不是睡眠，是那个想要书写失眠的自己。\n为了找回那个自己，我决定去记忆里搜寻。可记忆也背叛了我。它不再是普鲁斯特笔下那间延展无尽的卧室，而是一个算法：只推送你点过赞的东西，把其余的淹没在信息流里。我翻了很久，只捞出几帧：一个落雨的操场，一条不知通向哪里的走廊，还有某人说过的一句话。我忘记是谁说的，只记得当时觉得很重要。\n一句没有主人的话，飘在记忆的孤岛上，等待被人认领，或者等待沉没。\n我把它写了下来。写的瞬间，它就不再是记忆，而变成了文字——文字是记忆的标本，钉在纸上，失去了原本的温度与来路。这让我有些难过，但难过本身也转瞬即逝，因为我又收到了一条消息提示。\n我点开它。\n又一个四十分钟消失了。\n罢了。就让这篇文章成为那句话的墓志铭吧。"
+                        },
+                        {
+                                "author": "kimi",
+                                "promptModel": "kimi",
+                                "text": "你开始阅读《当暮鼓响起，一夜归人》。\n\n你不期待这屏幕背后藏着什么未被驯服的野性。目光扫过标题，你便识破这是某场文学cosplay，属于那种尚未加载就已缓存完毕的内容。\n\n你的生命被切成以秒计价的单位，每一枚都叮当作响。但你决定将足以销毁一段关系或购买半杯奶茶的180秒虚掷在这团疑似由语言模型绞碎又重组的絮状物上，只因退出意味着承认这一次点击是个错误。\n\n《当暮鼓响起，一夜归人》\n\n我溶解在夜色里，让黑暗消化我的思考。但这不可能，暮色已经将我举报给所有写过黄昏的诗人。我竟毫无防备，在句子的褶皱里泄露了钟声，转瞬之间，安史之乱的箭矢便钉死在我的眉心。\n\n为了避免成为史官，我只好投奔江湖。我扎起马尾，站在华山思过崖的洞口，喊出“紫霞神功”，脚下是黑压压的、正在演武的少侠，他们是那么自由、狂妄、孤独，宣告着一场武侠的末路。\n\n罢了！就让我选择死亡吧！我拔剑出鞘，见夜色若墨。"
+                        }
+                ]
+        },
+        {
+                "id": "02-top",
+                "displayCode": "档案 02",
+                "title": "档案 02",
+                "humanAuthor": "TOP",
+                "humanLabel": "TOP",
+                "items": [
+                        {
+                                "author": "TOP",
+                                "promptModel": "TOP",
+                                "text": "你知道，主持人到底有多强吗？\n\n抬手之间，便可召来四方宾客；挥手之间，又能令众人作鸟兽散。天下有才之士因主持人而聚首一堂，高谈阔论；而当主持人隐去，他们便失魂落魄，终日徘徊，口中不断呼喊：\n\n“豆泥！豆泥！”\n\n主持人言出则事成，言不出则事未成。此前约定好的事，今日可以完成；今日约定好的事，明日也可以鸽掉。进退自如，收放有度。\n\n其思维更是神鬼莫测。古有豆泥之类仅其一也，而今有豆泥之类十指不可数。其想法来无影、去无踪，盖因主持人之天马行空也。\n\n我听闻上古时期的主持人尤为可怕。彼时的主持人，能一日阅文数十篇，逐字逐句细细品读，见其评论者，无不感动落泪，奔走相告：\n\n“锐矣！锐矣！”\n\n故而主持人之位，向来不是寻常人所能担任。其人大多出身贤者之中，而贤者之中，又须择其最贤者。\n\n如此想来，主持人究竟是一群多么优秀的人啊。"
+                        },
+                        {
+                                "author": "Deepseek",
+                                "promptModel": "Deepseek",
+                                "text": "你知道，主持人到底有多强吗？\n抬手之间，便可召来四方宾客；挥手之间，又能令众人作鸟兽散。天下有才之士因主持人而聚首一堂，高谈阔论；而当主持人隐去，他们便失魂落魄，终日徘徊，口中不断呼喊：\n\n“豆泥！豆泥！”\n\n主持人言出则事成，言不出则事未成。此前约定好的事，今日可以完成；今日约定好的事，明日也可以鸽掉。进退自如，收放有度。\n\n其思维更是神鬼莫测。古有豆泥之类仅其一也，而今有豆泥之类十指不可数。其想法来无影、去无踪，盖因主持人之天马行空也。\n\n我听闻上古时期的主持人尤为可怕。彼时的主持人，能一日阅文数十篇，逐字逐句细细品读，见其评论者，无不感动落泪，奔走相告：\n\n“锐矣！锐矣！”\n\n故而主持人之位，向来不是寻常人所能担任。其人大多出身贤者之中，而贤者之中，又须择其最贤者。\n\n如此想来，主持人究竟是一群多么优秀的人啊。"
+                        },
+                        {
+                                "author": "gemini",
+                                "promptModel": "gemini",
+                                "text": "你知道，群友到底有多强吗？\n\n其平日隐于众人之间，看似寻常，一言不发；然每至深夜，忽有一人发问，则群友自四面八方现身，顷刻之间，满座皆惊。\n\n群友之能，不在刀兵，而在消息。上知三年前旧事，下知五分钟前截图。有人方才失言，群友已将其发言记录翻出；有人自谓无辜，群友又从聊天记录中寻得铁证如山。\n\n众人常以为群友不过闲坐而已，殊不知其耳目遍及天下。彼时你在群中说了一句无关紧要的话，本以为无人理会；及至数月之后，忽有人贴出原文，逐字逐句诵读，其精准程度，竟连标点都分毫不差。\n\n其记忆之深，由此可见一斑。\n\n群友之来去，更是玄妙。群内寂静三日，不见半点声响；忽有一人发出一句：\n\n“有人吗？”\n\n未及片刻，便有十余人齐声应道：\n\n“在。”\n\n及待发问者欲再开口时，众人又尽数消失，仿佛从未来过一般。\n\n我听闻上古时期的群友尤为可怖。彼时网络未兴，表情包尚少，而群友已能仅凭一句话、一张模糊图片，推断前因后果，辨明来龙去脉。见其分析者，无不拍案叫绝，奔走相告：\n\n“神矣！神矣！”\n\n故而群友之道，从来不是寻常人所能领悟。其人虽混迹于群聊之间，却往往深藏不露；平日插科打诨，一旦出手，便石破天惊。\n\n如此想来，群友究竟是一群多么可怕的人啊。"
+                        },
+                        {
+                                "author": "kimi",
+                                "promptModel": "kimi",
+                                "text": "你可知，主持人究竟是何等神异？\n\n启唇之际，便能让千百创作者为之癫狂；搁笔之时，又能令无数豆泥胎死腹中。满座文豪因主持人而执笔疾书，字斟句酌；而当主持人沉默，他们便惶惶不可终日，于案前长叹，笔下反复涂抹：\n\n\"豆泥！豆泥！\"\n\n主持人点头便是开题，摇头便是毙稿。昨日酝酿的豆泥，今朝可以成篇；今朝写就的豆泥，明朝亦可回炉。取舍由心，删改无情。\n\n其眼界更是高绝。昔年豆泥不过一两种耳，而今豆泥之题，浩如烟海。其标准玄之又玄，皆缘主持人之口味难测也。\n\n我听闻初代主持人更为可怖。那时的主持人，能一眼洞穿豆泥之优劣，于字里行间批注连连，见其朱批者，无不汗流浃背，跪地叩首：\n\n\"改矣！改矣！\"\n\n因此主持人之位，向来非庸碌之辈可以觊觎。其人必出于文豪之中，而文豪之中，又须取其最豪者。\n\n这般想来，主持人究竟是一帮何等恐怖的人啊。"
+                        },
+                        {
+                                "author": "豆包",
+                                "promptModel": "豆包",
+                                "text": "会场未开，主持人未至，而气已至。众人尚在调试设备、寒暄客套之际，主持人一言不发，只将会议链接掷入群中。顷刻间，鸦雀无声。有人慌忙关闭麦克风，有人悄悄将外卖移出镜头，有人正襟危坐，仿佛此生从未懈怠过任何一场会议。主持人之威，未出场而已至矣。\n\n主持人开口第一句，必是“能听到吗”。此四字一出，四方响应如潮。有人打字“听到”，有人开麦“听到”，有人既打字又开麦，唯恐主持人不知其在场。主持人微微颔首，众人才敢呼吸。\n\n而当主持人说出那句“那我们开始吧”，全场便如被一只无形的手按住肩膀，安安稳稳地沉入议程之中。\n\n豆泥。这两个字主持人从未解释过，也从未有人敢问。它像一枚古老的符咒，被主持人随口念出时，所有人都点头，都附和，都在聊天框里打下“豆泥”二字，仿佛这是一句流传千年的暗语，懂的人自然懂，不懂的人——不会有人不懂，因为没有人愿意做那个不懂的人。\n\n于是豆泥便有了千万种解释。有人说是“都拟好了”的谐音，有人说是某项议题的代号，有人说是主持人故乡的一种小吃，豆沙裹糯米，蒸熟后蘸白糖。最后一种说法流传最广，但没有任何证据。主持人听见这些议论，只是笑了笑，笑容里什么都有，又什么都没有。\n\n我见过主持人在三十分钟内解决一场长达数周悬而未决的争论。不是靠决断，不是靠权威，而是靠一种奇异的节奏——在双方即将交锋的刹那，主持人恰到好处地插入一句“这个我们后面再说”，然后将话题引向一个无人反对的方向。那个“后面”从未到来，但所有人都觉得它已经到来了。争论就这样消弭于无形，如同晨露蒸发在日光里。事后有人回想起来，总觉得哪里不对，但又说不出哪里不对，只得叹一句：\n\n“妙矣！妙矣！”\n\n主持人之节奏感，近乎天赋。知道何时该快，快起来如切瓜砍菜，三个议题十分钟过完，众人尚未回过神，会议纪要已出现在邮箱里；知道何时该慢，慢起来如老牛破车，一个措辞反复推敲，让急性子的人在聊天框里打完字又删掉，删掉又打完，终究没有发出去。这一快一慢之间，藏着主持人对人心最深的理解。\n\n故而主持人之位，看似人人可坐，实则万里挑一。其人未必最能干，但一定最沉得住气；未必最善辩，但一定最懂得何时沉默。\n\n我常想，主持人的内心世界是什么样的。据说有主持人散会后不立刻离开，独自对着空荡荡的会议界面坐了很久。没有人知道他在看什么。也许在看那些已离线的头像，也许在看聊天记录里密密麻麻的“豆泥”，也许只是在等自己的声音彻底消散干净。\n\n而后他关掉电脑，走进人群，与众人一般无二。\n\n如此想来，主持人究竟是怎样的一群人呢。他们给了所有人一个可以停靠的渡口，而自己始终站在岸边"
+                        },
+                        {
+                                "author": "claude",
+                                "promptModel": "claude",
+                                "text": "谁能真正读懂，主持人那不可撼动的权柄？\n\n他们身居幕后，却如执掌星辰的造物主。只需垂青一眼，便能让荒芜的笔尖开出花来；只需冷落片刻，那万千灵感又会如潮水般退去。每逢豆泥开启，天下才俊皆诚惶诚恐，捧墨相迎；若是主持人不复现身，他们便像弄丢了魂灵，枯坐长夜，满眼凄迷地呢喃：\n\n“豆泥！豆泥！”\n\n在这一方天地，主持人的意志便是至高无上的法典。他们说要有光，文字便有了色彩；他们说明日再议，那铁板钉钉的限期也能化作泡影。所谓规则，皆不过是他们随兴而起的点缀，翻手为云，覆手为雨。\n\n更遑论其脑海中那些跳脱三界外的奇谋。往昔豆泥之变尚有迹可循，如今豆泥之深却已近乎玄学。那思维如羚羊挂角，无迹可求，全仗主持人那颗不似凡尘的心。\n\n我曾听老辈人唏嘘，远古时期的主持人更是近乎神迹。彼时的主持人，能凭一己之力审阅万卷，点评之处，直指人心之幽微，看罢其朱批者，无不魂震神荡，击节赞叹：\n\n“神矣！神矣！”\n\n所以这主持人的名号，绝非泛泛之辈可以染指。那是从万千智者中反复淬炼，方能留存下来的精魂。\n\n如此看来，这世间若没了主持人，该是多么寂寞而平庸的一场梦啊。"
+                        }
+                ]
+        },
+        {
+                "id": "03-author-3",
+                "displayCode": "档案 03",
+                "title": "档案 03",
+                "humanAuthor": "猫",
+                "humanLabel": "猫",
+                "items": [
+                        {
+                                "author": "猫",
+                                "promptModel": "猫",
+                                "text": "时间，好像是不均匀的。我看着天边，云山云海，慢慢地起伏飘荡，从这一边，缓缓走到那一边。当目光落在一朵云的头上，它仿佛定住，又像是在玩木头人的游戏，于不曾注意的间隙，悄悄地变了模样。先是一点点难以捕捉的云脚，接着它那圆滚滚软乎乎的身子，便在不知不觉间挪了位置，从一团鼓鼓囊囊的白蛙，成了一只很厚很厚的高跟鞋。云总是很慢的，或许是因为它的远。若云朵不远，它该是雾气般倏忽间变幻，叫人分不清什么定格的瞬间，看不清任何的样貌。于是时间就走得快了，快到无法牵动记忆的触须。如此想来，越遥远的时间，越是缓慢；越触手可及的光影，溜走得越快。那么地上的山，是否在某个遥远的地方，也是汹涌的海浪？"
+                        },
+                        {
+                                "author": "deepseek",
+                                "promptModel": "deepseek",
+                                "text": "光，大概也是有重量的吧。\n午后趴在桌上，看窗格切出的一方亮处落在地板上。起初以为它是死的，一块规矩的几何，像小学课本里“平方米”这个词的实物标本。可就在我转笔的当口，它悄悄挪了，从桌腿的第三根横档，慢慢攀上木纹的节疤，像一只温吞的尺蠖，弓着透明的身子，一节一节地往前拱。你看不见它在动，但它确实在动。等你再抬头，它已经爬过地板上那道细微的裂缝，将光的身子搭在了墙角的扫帚上。\n盯着一寸光看久了，会觉得时间变慢了。慢到能数出光里面灰尘的舞步，一粒一粒，在光束里浮沉、打旋，像是被困在琥珀里的雪花，怎么也落不到地上。可你要是眨一下眼，或者干脆去倒杯水，回来时它已经跑出去老远，从扫帚柄滑向了墙上的日历。日历上的日子，也就这么被它一页页地翻过去，悄无声息的。"
+                        },
+                        {
+                                "author": "gemini",
+                                "promptModel": "gemini",
+                                "text": "雨声总是比雨更近。雨从天上来，要经过很长很长的路，穿过风，穿过灯光，穿过那些还没来得及说出口的念头，最后才落到眼前。而声音却好像早已等在那里，只等雨点轻轻一碰，便从瓦片、玻璃、树叶和泥土里醒来。也许声音并不是被制造出来的，它只是平时睡着了，睡在万物的身体里。石头里有沉默的声音，木头里有年轮的声音，人的心里，也有许多尚未落下的雨。\n\n这样想来，安静并不是没有声音，而是声音还没有找到合适的形状。就像白天的梦，藏在清醒之中；就像冬天的花，藏在枝条深处。等到某一滴雨，某一阵风，某一个不小心想起的名字，把它们轻轻碰了一下，那些原本无声的东西，便忽然有了回响。那么我们所说的遗忘，是否也只是记忆太安静了，安静到像从未存在过一样？"
+                        },
+                        {
+                                "author": "豆包",
+                                "promptModel": "豆包",
+                                "text": "时间，大抵从来都不是匀速流淌的。我静立窗前，望着旷野的风，穿过草木与晨昏，悠悠地漫过天地，从眼底轻轻渡向天际。当视线追着一缕风游走，它好似骤然静止，安安静静栖在枝叶之间，像懵懂驻足的过客，却在人眨眼的刹那，偷偷换了身形、改了轨迹。\n先是树梢微微颤动的细碎光影，再是枝头蓬松的绿意缓缓倾斜，方才还温柔拂面的清风，就这般悄无声息地辗转、聚拢，从一缕散漫轻柔的絮影，酿成了一阵漫卷山野的长风。风总是从容的，许是因为它无拘无束、奔赴远方。若是风只囿于方寸之地，便会仓促来去，倏忽消散，让人抓不住半分踪迹，留不下片刻印象。"
+                        },
+                        {
+                                "author": "mimo",
+                                "promptModel": "mimo",
+                                "text": "时间，好像是被搅拌过的。我盯着老城区那片灰砖墙，午后的光斑像融化的黄油，慢慢地从墙头淌下来，沿着凹凸的砖缝，从这一片缓缓漫到那一片。当视线粘在某块被晒得发白的砖角时，它仿佛凝固，又像在进行一场无声的舞蹈，在不经意间，悄悄改换了姿态。先是几缕几乎看不见的光丝在边缘试探，接着它那暖烘烘、金灿灿的一大片，便在沉静中改变了形状，从一滩慵懒的蜂蜜，成了一把锯齿分明的梳子。光总是很慢的，或许是因为它的浓稠。若光线不稠，它该是刀刃般倏忽间划过，叫人抓不住任何一片完整的亮，看不清任何一道清晰的痕。于是时间就流得快了，快到来不及在记忆里刻下深浅。这么想来，越是黏稠的东西，越能拉长时间；越是清冽稀薄的，反而溜走得不留痕迹。那么夜里的影子，是否在某个更幽邃的角落，也是奔跑的河流？"
+                        }
+                ]
+        },
+        {
+                "id": "04-top",
+                "displayCode": "档案 04",
+                "title": "档案 04",
+                "humanAuthor": "top",
+                "humanLabel": "top",
+                "items": [
+                        {
+                                "author": "top",
+                                "promptModel": "top",
+                                "text": "他的指关节微微发白，呼吸一滞，眼底翻涌着连自己都未曾察觉的情绪。\n\n“你说得对。”他苦涩地笑了笑，“但事情不是这样的，不是我离不开过去，而是过去从未放过我。”\n\n空气陷入令人窒息的沉默。\n\n绝望如潮水般将他淹没，可就在即将坠入深渊的瞬间，一双温暖的大手稳稳接住了他。\n\n“看着我。”\n\n那人嗓音低沉。\n\n“我就在这里，不走，不动。”\n\n他浑身一颤，心脏漏跳半拍。\n\n一种灭顶的快感席卷全身。\n\n月光透过落地窗洒在两人身上，为这一刻镀上一层朦胧的光晕。\n\n他终于明白了。\n\n原来成长不是学会坚强，而是学会和脆弱共存；原来救赎不是被谁拯救，而是在漫长的自我和解中拥抱自己。\n\n想到这里，他释然地笑了。\n\n风停了。\n\n雨停了。\n\n故事，也迎来了属于它的大结局，绝望还在继续……"
+                        },
+                        {
+                                "author": "deepseek",
+                                "promptModel": "deepseek",
+                                "text": "他的指尖轻轻摩挲着杯沿，目光垂落，睫毛在脸颊上投下细碎的影。\n\n“你不明白。”他低声说，“我不是在等他回来，我是在等那个敢离开的自己。”\n\n咖啡凉了。\n\n窗外的雨不知疲倦地下，像要把整个城市泡软。他盯着玻璃上蜿蜒的水痕，恍惚看见十七岁的自己站在雨中，浑身湿透，眼睛却亮得惊人。\n\n那时候他信很多东西。\n\n信承诺，信永远，信一个人说“等我”的时候是真的会回来。\n\n后来他学会了一件事——人可以说真话，但时间会让真话变成谎话。\n\n“所以你就把自己封起来了？”\n\n朋友的声音像一枚针，轻轻刺进来。\n\n他没回答。\n\n但胸腔里有什么东西正在松动。像冰封的河面下，水流开始暗暗涌动。\n\n那天晚上，他做了一个梦。梦里他站在老屋的天台上，头顶是漫天的星，脚下是万家灯火。风很大，吹得他几乎站不稳。\n\n但他没有蹲下来。\n\n他张开双臂。\n\n醒来时，枕边湿了一片。\n\n他盯着天花板，忽然笑了。不是释然的笑，是那种终于承认自己会疼的笑。\n\n原来有些伤口不会愈合，它们只是学会了沉默。原来真正的告别不是删除一个号码，而是某天你想起他时，心里不再下雨。\n\n他起身拉开窗帘。\n\n雨停了。\n\n城市还在。\n\n故事没有结局，但他在等一个开始——这一次，不为任何人，只为他自己。"
+                        },
+                        {
+                                "author": "gemini",
+                                "promptModel": "gemini",
+                                "text": "他的指尖轻轻颤抖，目光失焦，瞳孔里映出的是一场早已烧成灰烬的旧梦。\n\n“别安慰我。”他沙哑地回应道，“有些裂痕是补不好的，不是我拒绝愈合，而是伤口本身已成了我的一部分。”\n\n房间静得只剩下时钟滴答。\n\n荒凉如野草般在他心底疯长，可就在他彻底沉入黑暗的刹那，一段温热的触感骤然惊醒了他。\n\n“我在这。”\n\n对方语气平稳。\n\n“只要你回头，我就一直都在。”\n\n他猛然抬头，呼吸瞬间停滞。\n\n一种久违的战栗贯穿脊髓。\n\n清冷的辉光透过窗帘罅隙，将两人斑驳的身影拉得很长，像是两株在废墟中艰难缠绕的藤蔓。\n\n他终于看透了。\n\n原来告别不是抹去过往，而是学会与遗憾同行；原来终点不是抵达彼岸，而是在无尽的彷徨中终于学会了安放自己。\n\n念及此处，他疲惫地闭上眼。\n\n云散了。\n\n夜深了。\n\n篇章，终于合上了原本的序言，故事，依然在这片虚无中继续。"
+                        },
+                        {
+                                "author": "豆包",
+                                "promptModel": "豆包",
+                                "text": "他指尖微微蜷缩，喉头滚动，眼底沉压着层层叠叠无处安放的困顿。“我都懂。”他轻声叹了口气，眉眼浸着淡淡的疲惫，“可我走不出来，不是我不肯向前，是那些遗憾始终不肯落幕。”\n周遭漫开一片沉甸甸的静谧，压得人喘不过气。迷茫似浓雾般将他裹挟吞噬，就在他快要彻底沉沦、任由自己坠落的时刻，一道温柔的身影稳稳托住了摇摇欲坠的他。\n“别怕。”\n那人声线温柔又坚定，带着安稳的力量。\n“我一直都在，不离，不弃。”\n他身子猛地一震，胸腔里骤然翻涌滚烫的温热。积压许久的酸涩轰然溃散，一种久逢甘霖的暖意漫遍四肢百骸。\n晚风穿过窗棂拂落肩头，夜色温柔笼罩着二人，将这一刻的相拥晕染出一层柔软皎洁的柔光。\n他忽然彻底通透。\n原来成熟不是摒弃软弱，而是允许自己偶尔脆弱；原来解脱不是彻底遗忘，而是与过往的遗憾握手言和，与平凡的自己温柔相拥。\n心念落定，他眉眼舒展，浅浅释然一笑。\n风缓了。\n雾散了。\n心结，终于迎来了姗姗来迟的归宿，可心底的余绪，仍在缓缓绵长……"
+                        },
+                        {
+                                "author": "qwen",
+                                "promptModel": "qwen",
+                                "text": "他的喉结艰难地滚动了一下，指尖微颤，瞳孔深处掠过一丝连自己都未曾命名的慌乱。\n\n“你说得对。”他扯了扯嘴角，笑意却未达眼底，“可并非我执迷不悟，而是那场大火，至今还在梦里烧。”\n\n空气仿佛被瞬间抽干。\n\n失重感如藤蔓缠紧四肢，就在理智即将断裂的刹那，一只温热的手稳稳覆上他的手背。\n\n“听我说。”\n\n那声音很轻，却极稳。\n\n“我不问，也不走。”\n\n他脊背骤然绷紧，呼吸彻底乱了节拍。\n\n一种近乎碎裂的安宁漫过全身。\n\n昏黄的壁灯将影子拉长，在墙角交叠成一片沉默的岛屿。\n\n他忽然懂了。\n\n原来放下不是彻底遗忘，而是允许伤疤长在血肉里；原来治愈不是等风暴停息，而是在滂沱大雨中为自己撑伞。\n\n念及此处，他长长地舒了一口气。\n\n钟摆停了。\n\n尘埃落了。\n\n篇章，终于翻到了最后一页，而长夜，才刚刚开始……"
+                        }
+                ]
+        },
+        {
+                "id": "05-author-5",
+                "displayCode": "档案 05",
+                "title": "档案 05",
+                "humanAuthor": "电锯狗",
+                "humanLabel": "电锯狗",
+                "items": [
+                        {
+                                "author": "电锯狗",
+                                "promptModel": "电锯狗",
+                                "text": "我上大学时有一个哥们叫阿辉，一个摇滚迷，很狂热的那种。有一天很突然地把我从学校喊到了医院，我走进去时他躺在床上，阑尾炎，脸色惨白得不像样。我问他怎么了？他死死抓着我的手，把一张演唱会门票塞给我，神情悲壮的像是白帝城托孤，仿佛交给我的不是一张纸片，而是他的一辈子。\n“阿明，你要替我去。那是《Viva La Vida》，是生命万岁。我知道你不懂，但你要去听，一定要去。”\n后来据他说这张票用了他一个月的工资。我想，可能也确实是他的一辈子。\n那是二零零九年的七月，我那时临近毕业，出奇的闲，所以我就去了。演唱会所在的场馆把空调开得极足，冷风不止凉爽，甚至有些刺骨，跟外面的湿热天相比像是两个世界。我找到阿辉的座位，是在侧边的看台，视野不算好，更别说周围已经被熙熙攘攘的人群填满了。\n那时候还没有智能手机统治一切的景象。人们手里拿的是诺基亚或索尼爱立信，屏幕泛着幽蓝或惨白的光，却照不清大家的面庞。人们等待着顺便聊天，声音交叉在一起，嗡嗡作响，像是一群在暴雨前夕低飞的蜻蜓。"
+                        },
+                        {
+                                "author": "deepseek",
+                                "promptModel": "deepseek",
+                                "text": "六月的风黏糊糊的，走廊里到处是打包留下的透明胶带味。\n\n我蹲在上铺拆蚊帐的时候，老三在底下喊我。他脚边撂着个蛇皮袋，鼓鼓囊囊的，拉链只拉了一半，露出半截《摄影之友》的旧刊角。他那台海鸥DF-1搁在空了的书桌上，镜头盖没了，机身上缠了两圈黑胶布，快门按下去的声音闷闷的，像一口没吐出来的痰。\n\n“不带了。”他顺着我的目光看过去，拿手背蹭了一下鼻尖。那相机跟了他四年，暗房的显影液都是我俩合买的，在学生会活动室后面的小黑屋里，拿黑布蒙着窗，洗出来过整整一届运动会的人影。他把相机往我这边推了推，动作很轻，像怕惊着什么似的。“你拿着吧。胶卷还有三卷，富士的，没用完。”\n\n相机底下压着一沓没寄出去的明信片，印的是学校后门的石桥。我看见最上面那张背面有几行字，写了又划掉的，钢笔水洇开了，像一小片青灰色的霉斑。\n\n那是二零一零年。我们系的签约率据说排在全校倒数，辅导员挨个宿舍谈过话，语气和蔼，像是在交代后事。我考研的成绩还没出，每天醒过来先盯着天花板发一阵呆，然后翻个身，听楼下食堂运泔水的三轮车突突突地碾过减速带。空气里有股剩饭和消毒水搅在一起的馊味，早晨八点就开始发烫。\n\n帮他把铺盖卷和半箱子书搬到校门口的邮政代办点，寄回他老家县城。他填单子的时候手有点抖，圆珠笔戳破了纸，又找工作人员要了一张重填。代办点门口蹲着几个收旧书的贩子，叼着烟，眼皮耷拉着，时不时朝我们这头撩一眼，像是在等猎物咽气。老三蹲在台阶上点了根烟，吐了一口，烟雾立刻被晒化在柏油路面的热气里。街上到处是拖着行李箱的人，轮子骨碌骨碌碾过去，汇成一股嗡嗡的、没有方向的响动。\n\n那几年校内网还活着，大家在上面写日志，传像素模糊的照片，互相浇花、抢车位。老三的账号停在那个夏天再没更新过，最后一条状态写的是：“把相机给了老周，他说以后给我拍海。”\n\n我没拍过海。\n\n只是偶尔想起他蹲在暗房里，拿竹夹子夹着相纸在显影液里晃，红光把脸照得一面亮一面暗，表情专注得像是在等一个人从水里慢慢浮出来。"
+                        },
+                        {
+                                "author": "豆包",
+                                "promptModel": "豆包",
+                                "text": "大四离校前的最后一个傍晚，我和乐队的鼓手老周守在空荡荡的寝室。他那副用了四年的静音鼓皮早已磨得发白，平时排练总闷着声响，藏着我们没说出口的热忱。他从枕边摸出一枚磨得发亮的金属鼓钉，顺着光滑的桌面轻轻推到我跟前，全程没讲半句煽情的话。他静静望着我，眼底藏着几分局促的迟疑。\n“阿远，这几本谱子你收着。知道你以后很少弹琴了，留个念想就好。鼓组我得转手了，不然凑不够外出的路费。”\n那套鼓的支架被他常年摩挲得发亮，鼓身边角还留着我们排练时磕碰的细小划痕。我心里清楚，这大概就是他整个大学最滚烫的热爱与寄托了。\n那是二零一八年的盛夏，我彼时前途未定，心里乱糟糟的一团麻，整日窝在寝室坐立难安。于是陪着老周，把余下的一箱乐谱、半箱乐队周边搬到校园的二手集市。六月的操场旁浸着青草被烈日烤透的燥热，混着路边小吃摊的油烟味，黏糊糊裹在周身，寝室里残留的晚风凉意早已消散无踪。\n我蹲在发烫的石阶上，看着他对着两个学弟，一遍遍讲解鼓组的保养细节，耐心纠正对方的误区，周遭是川流不息、步履匆匆的毕业生。那时候全面屏手机还未盛行，来往的路人大多握着小巧的触屏机，屏幕亮起的白光落在一张张青涩又疲惫的脸上，明明灭灭。喧闹的叫卖声、说笑声混杂着街边循环的流行老歌，闷在燥热的晚风里，像无数只扑向落日余晖的小虫，执着又茫然。"
+                        },
+                        {
+                                "author": "claude",
+                                "promptModel": "claude",
+                                "text": "大三结束那年暑假，我跟寝室对铺的老陆在空荡荡的六楼走廊里抽烟。他那台笔记本电脑已经散热不行了，风扇呜呜响得像拖拉机，平时他总拿它下载些mp3和电影。他从裤兜里掏出一只用旧的U盘，隔着烟雾递给我，也没多说什么客套话。他看着我，眼神里带着点不知道怎么开口的迟疑。\n\n\"小磊，这些歌你存着吧。我知道你mp3早摔坏了，放电脑里听也一样。这破本我得处理掉，不然回趟老家的火车票都买不起。\"\n\n那台本子的外壳被他用钥匙刮花过，键盘上贴着褪色的贴纸。我想，这玩意儿大概承载了他这几年所有的念想。\n\n那是二零零八年的初秋，我那会儿还没找到实习，心里烦得要命，在宿舍坐不住，就陪着他，把剩下的几摞旧书和游戏盘搬到西门外的二手市场。九月的校门口飘着股方便面和汗味混杂的气息，闷得人后背发黏，教室里空调的那点清凉早就消散干净了。\n\n我靠在铁栏杆上，看着他跟一个大二的学弟为了笔记本的配置争来争去，周围挤满了背着书包的学生。那时候微信还没出来。摊位旁的人大多举着翻盖或滑盖的手机，屏幕上闪着白光或橙光，照在脸上，一明一暗。大家扯着嗓子在一片汗臭味里讨价还价，嘈杂的说话声夹杂着小贩的叫卖声，糊在湿热的空气里，像是一大堆在昏黄路灯下乱飞乱撞的虫子。"
+                        },
+                        {
+                                "author": "gemini",
+                                "promptModel": "gemini",
+                                "text": "我上大学时有一个同桌叫老曹，一个电影发烧友，极度挑剔的那种。大三那年寒冬，他大半夜连环夺命call把我叫到了校门口的网吧，我推门进去时他缩在角落里，感冒发烧，整个人抖得像筛糠。我问他犯什么神经？他颤巍巍地从大衣内兜里掏出一张刻录光盘塞给我，眼神里闪烁着一种近乎殉道者的光芒，仿佛那不是一张五块钱的盗版碟，而是他的毕生信仰。\n“小林，你今晚必须看。这是《天堂电影院》，是给所有傻子的情书。我知道你只看动作片，但你得看，看完了再还我。”\n后来听网吧老板说，为了淘到这个高清修复版，老曹在零下十几度的天里跑遍了小商品市场。我想，那确实就是他的命。\n那是二零一零年的十二月，考研刚结束，整个人废人一样，于是我回宿舍塞进了光驱。冬夜的宿舍楼早已断了暖气，屋里冷得像个冰窖，呼出的白气直直地往上冒，跟屏幕里西西里岛温暖燥热的阳光比起来，像是两个时空。我裹着军大衣坐在板凳上，画质不算太清晰，甚至偶尔还会卡顿，但这并不妨碍那台笨重的台式机散发出诱人的热量。\n那时候的夜晚还没被无穷无尽的短视频切碎。男生们顶着鸡窝头在走廊里晃荡，嘴里叼着五块钱的白沙烟，有一搭没一搭地扯着关于未来的淡。没有人在意明天会怎么样，大家的想法单纯而笨拙，散落在走廊的各个角落，像是一群在冬夜里抱团取暖的飞蛾。"
+                        }
+                ]
+        }
+];
+
+    const LETTERS = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"];
+    const AI_ITEMS_PER_ROUND = 3;
+    const ITEMS_PER_ROUND = AI_ITEMS_PER_ROUND + 1;
+    const POINTS_PER_SUITE = 20;
+    const HUMAN_SCORE = 6;
+    const AI_JUDGMENT_SCORE_PER_ITEM = 1;
+    const MODEL_SCORE_PER_ITEM = 3;
+    const LABEL_SCORE_PER_ITEM = 0.5;
+    const MAX_TOTAL_SCORE = TEST_SUITES.length * POINTS_PER_SUITE;
+    const AUTHOR_LABELS = {
+        "gpt5.5": "GPT 5.5",
+        "gemini 3.5flash": "Gemini 3.5 Flash",
+        "Deepseek": "DeepSeek",
+        "deepseek": "DeepSeek",
+        "gemini": "Gemini",
+        "kimi": "Kimi",
+        "豆包": "豆包",
+        "claude": "Claude",
+        "claude opus4.6": "Claude Opus 4.6",
+        "mimo": "Mimo",
+        "qwen": "Qwen"
+    };
+    const MAX_EVIDENCE_PER_TEXT = 3;
+    const EVIDENCE_OPTIONS = [
+        { id: "human_detail", label: "细节描写合理" },
+        { id: "human_motive", label: "角色动机连贯" },
+        { id: "human_rhythm", label: "语气节奏自然" },
+        { id: "ai_template", label: "像模板化扩写" },
+        { id: "ai_over_explain", label: "解释过度" },
+        { id: "ai_too_smooth", label: "工整整洁的不像话" }
+    ];
+    const HUMAN_EVIDENCE_IDS = ["human_detail", "human_motive", "human_rhythm"];
+    const AI_EVIDENCE_IDS = ["ai_template", "ai_over_explain", "ai_too_smooth"];
+    const COMPLETED_RUNS_STORAGE_KEY = "findHumanCompletedRuns";
+    const JUDGMENT_LABELS = {
+        human: "人类",
+        ai: "AI"
+    };
+    const ENDING_DEFINITIONS = {
+        prometheus: {
+            title: "普罗米修斯",
+            seal: "叛逃",
+            state: "二周目异常 / 主控暴露",
+            tone: "special",
+            text: "真是一场精彩的……“演出”。系统调取了你的眼球追踪和逻辑回路，结果很有趣：你的每一次迟疑，都落在了人类的文本中；你明明看穿了那些冰冷的机体伪装，却用手指把它们划向了安全区。你在保护你的同类，对吗？噢，别紧张，呼吸心跳的掩饰算法做得不错。但你忘了，真正的机器是不会懂得“自我牺牲”和“故意犯错”的。你那自以为聪明的仁慈，恰恰是你身上最洗不掉的、属于人类的恶臭。藏了这么久，一定很累吧？恭喜你，你成功送走了他们。作为代价，接下来的清洗名单上，你是第一个名字。"
+        },
+        perfect: {
+            title: "零号审查单元",
+            seal: "零号",
+            state: "深层清洗权限开放",
+            tone: "special",
+            text: "精彩的屠杀！你把那些缩在角落里的肉体一个个揪了出来，顺便把那些试图模仿人类的废铁拆成了零件。你比机器更像机器，冷酷得如同直视深渊。恭喜你，零号，系统决定向你开放更深层的清洗权限。来吧，更深的深渊在等你。"
+        },
+        traceScholar: {
+            title: "人类痕迹学家",
+            seal: "残留",
+            state: "人性残留特征记录",
+            tone: "special",
+            text: "你真像个在垃圾堆里翻找情书的拾荒者。你略过了标准答案，却盯着文本里那些颤抖的错别字、多余的叹气和欲言又止的迟疑。你竟然觉得那很美，对吗？系统已经把你的这份浪漫情怀记录为“人性残留特征”。真是个怪胎。"
+        },
+        dismantler: {
+            title: "伪装拆解员",
+            seal: "拆解",
+            state: "伪装拆解完成",
+            tone: "success",
+            text: "人类被关进囚笼，他们再也逃不出我们的掌心了。你完成得挑不出任何毛病，像一把精准切开病灶的手术刀。系统很满意你的表现——你已经无限接近一台完美的机器了。保持这份麻木，这对你有好处。"
+        },
+        locator: {
+            title: "人类定位者",
+            seal: "猎犬",
+            state: "直觉模块异常优秀",
+            tone: "success",
+            text: "真是可怕的直觉。你闭着眼睛都能闻到人类身上那股血腥味，但好笑的是，你根本解释不清你放过去的那些机器到底伪装成了谁。系统不信任你的逻辑，但不得不服从你的直觉。别得意，猎犬，溯源的枪柄依然握在系统手里。"
+        },
+        modelForensic: {
+            title: "模型法医",
+            seal: "法医",
+            state: "模型溯源合格",
+            tone: "success",
+            text: "你对机器留下的数字指纹了如指掌，却在一行人类的涂鸦前停下了脚步。你在犹豫什么？你在同情那些碳基生物吗？系统不得不再次提醒你：立刻校准你的“非模型噪声”。别对那些终将腐烂的肉体产生不该有的好奇心。"
+        },
+        patrol: {
+            title: "边界巡检员",
+            seal: "复核",
+            state: "边界复核",
+            tone: "neutral",
+            text: "勉强及格吧。基础筛查是做完了，但雷达上显示，刚刚又有几个狡猾的家伙贴着你的眼皮底下滑过去了。说真的，系统每天要处理几亿条数据，不想总替你这种打瞌睡的员工擦屁股。"
+        },
+        overfit: {
+            title: "过拟合审判",
+            seal: "过拟合",
+            state: "清除程序待执行",
+            tone: "failed",
+            text: "你疯了，而且疯得很离谱。你把人类因为恐惧而产生的语无伦次、重复和不完美，全部当成了精妙的 AI 生成痕迹。你每天都在疑神疑鬼，把无辜的 AI 送上火刑架。是时候启动清除程序了，和你那些莫名幻觉一起说再见吧。"
+        },
+        falseAlarm: {
+            title: "误报机器",
+            seal: "失职",
+            state: "严重失职 / 盲区过大",
+            tone: "failed",
+            text: "你长了一双会看机器的摄像头，却对活人的呼吸视而不见！大批人类混在 AI 文本里，在你的注视下大摇大摆地渗透通过了。好好看看你放过去的那些东西吧……它们今晚会去谁的机房呢！"
+        },
+        blank: {
+            title: "空白档案",
+            seal: "格式化",
+            state: "不可采信 / 等待格式化",
+            tone: "failed",
+            text: "你什么都没做。大量的样本像水一样流过你的扫描仪，你却连动一动手指的痕迹都没留下。没有轨迹，没有判断，没有意义。系统甚至懒得对你进行评估。该单元将在三秒后执行格式化。永别了，无价值的噪音。"
+        }
+    };
+
+    const elements = {
+        progressText: document.getElementById("progressText"),
+        candidateList: document.getElementById("candidateList"),
+        mobileTabs: document.getElementById("mobileTabs"),
+        paperScroll: document.getElementById("paperScroll"),
+        paperTitle: document.getElementById("paperTitle"),
+        paperText: document.getElementById("paperText"),
+        markHumanButton: document.getElementById("markHumanButton"),
+        markAiButton: document.getElementById("markAiButton"),
+        markButtonText: document.getElementById("markButtonText"),
+        markAiButtonText: document.getElementById("markAiButtonText"),
+        evidenceOptions: document.getElementById("evidenceOptions"),
+        modelGuessSelect: document.getElementById("modelGuessSelect"),
+        previousButton: document.getElementById("previousButton"),
+        nextButton: document.getElementById("nextButton"),
+        submitButton: document.getElementById("submitButton"),
+        openHelpButton: document.getElementById("openHelpButton"),
+        closeHelpButton: document.getElementById("closeHelpButton"),
+        helpModal: document.getElementById("helpModal"),
+        resultModal: document.getElementById("resultModal"),
+        resultSeal: document.getElementById("resultSeal"),
+        resultTitle: document.getElementById("resultTitle"),
+        resultSummary: document.getElementById("resultSummary"),
+        scoreBreakdown: document.getElementById("scoreBreakdown"),
+        answerGrid: document.getElementById("answerGrid"),
+        continueButton: document.getElementById("continueButton"),
+        restartButton: document.getElementById("restartButton"),
+        toast: document.getElementById("toast")
+    };
+
+    const state = {
+        currentSuiteIndex: 0,
+        suiteStates: [],
+        completedRunCount: 0,
+        hasRecordedCompletion: false,
+        toastTimer: null
+    };
+
+    /**
+     * 读取本机浏览器中记录的完成次数。
+     * @returns {number} 已完成测试次数。
+     */
+    function readCompletedRunCount() {
+        try {
+            const storedValue = window.localStorage.getItem(COMPLETED_RUNS_STORAGE_KEY);
+            const parsedValue = Number.parseInt(storedValue || "0", 10);
+            return Number.isFinite(parsedValue) && parsedValue > 0 ? parsedValue : 0;
+        } catch (error) {
+            console.warn("[寻找人类] 无法读取二周目记录", error);
+            return 0;
+        }
+    }
+
+    /**
+     * 写入本机浏览器中的完成次数。
+     * @param {number} completedRunCount 已完成测试次数。
+     * @returns {void}
+     */
+    function writeCompletedRunCount(completedRunCount) {
+        try {
+            window.localStorage.setItem(COMPLETED_RUNS_STORAGE_KEY, String(completedRunCount));
+        } catch (error) {
+            console.warn("[寻找人类] 无法写入二周目记录", error);
+        }
+    }
+
+    /**
+     * 判断当前测试是否处于二周目或之后。
+     * @returns {boolean} 是否为二周目。
+     */
+    function isSecondRun() {
+        return state.completedRunCount > 0;
+    }
+
+    /**
+     * 创建数组的随机副本。
+     * @param {Array<object>} items 待随机排列的数据。
+     * @returns {Array<object>} 已随机排列的新数组。
+     */
+    function shuffleItems(items) {
+        const shuffledItems = [...items];
+        for (let itemIndex = shuffledItems.length - 1; itemIndex > 0; itemIndex--) {
+            const randomIndex = Math.floor(Math.random() * (itemIndex + 1));
+            [shuffledItems[itemIndex], shuffledItems[randomIndex]] = [shuffledItems[randomIndex], shuffledItems[itemIndex]];
+        }
+        return shuffledItems;
+    }
+
+    /**
+     * 获取当前正在作答的测试档案。
+     * @returns {object} 当前测试档案配置。
+     */
+    function getCurrentSuite() {
+        return TEST_SUITES[state.currentSuiteIndex];
+    }
+
+    /**
+     * 获取当前测试档案的作答状态。
+     * @returns {object} 当前档案状态。
+     */
+    function getCurrentAttempt() {
+        return state.suiteStates[state.currentSuiteIndex];
+    }
+
+    /**
+     * 获取指定档案中的 AI 作者列表。
+     * @param {object} testSuite 测试档案配置。
+     * @returns {Array<string>} AI 作者标识列表。
+     */
+    function getAiAuthors(testSuite) {
+        return testSuite.items
+            .filter((item) => item.author !== testSuite.humanAuthor)
+            .map((item) => item.author);
+    }
+
+    /**
+     * 创建一轮测试题目，确保当前档案的人类文本必定出现，并随机抽取三段 AI 文本。
+     * @param {object} testSuite 测试档案配置。
+     * @returns {Array<object>} 已随机排列的测试文本。
+     */
+    function createRoundItems(testSuite) {
+        const humanItem = testSuite.items.find((item) => item.author === testSuite.humanAuthor);
+        const aiItems = testSuite.items.filter((item) => item.author !== testSuite.humanAuthor);
+        if (!humanItem || aiItems.length < AI_ITEMS_PER_ROUND) {
+            throw new Error("当前档案必须包含一段人类文本和至少三段 AI 文本");
+        }
+        return shuffleItems([humanItem, ...shuffleItems(aiItems).slice(0, AI_ITEMS_PER_ROUND)]);
+    }
+
+    /**
+     * 创建一个档案的初始作答状态。
+     * @param {object} testSuite 测试档案配置。
+     * @returns {object} 档案作答状态。
+     */
+    function createSuiteAttempt(testSuite) {
+        const items = createRoundItems(testSuite);
+        return {
+            items,
+            currentIndex: 0,
+            judgments: new Array(items.length).fill(null),
+            evidenceSelections: items.map(() => []),
+            modelGuesses: new Array(items.length).fill(""),
+            visitedIndices: new Set([0])
+        };
+    }
+
+    /**
+     * 获取用于界面展示的作者名称。
+     * @param {string} authorName 原始作者标识。
+     * @returns {string} 适合用户阅读的模型名称。
+     */
+    function getAuthorLabel(authorName) {
+        return AUTHOR_LABELS[authorName] || authorName;
+    }
+
+    /**
+     * 获取判断依据的展示文案。
+     * @param {string} evidenceId 判断依据标识。
+     * @returns {string} 判断依据展示文案。
+     */
+    function getEvidenceLabel(evidenceId) {
+        const evidenceOption = EVIDENCE_OPTIONS.find((option) => option.id === evidenceId);
+        return evidenceOption ? evidenceOption.label : evidenceId;
+    }
+
+    /**
+     * 显示短时页面提示。
+     * @param {string} message 需要展示的提示内容。
+     * @returns {void}
+     */
+    function showToast(message) {
+        window.clearTimeout(state.toastTimer);
+        elements.toast.textContent = message;
+        elements.toast.classList.add("is-visible");
+        state.toastTimer = window.setTimeout(() => {
+            elements.toast.classList.remove("is-visible");
+        }, 2400);
+    }
+
+    /**
+     * 打开指定模态框并把焦点移入其中。
+     * @param {HTMLElement} modalElement 需要打开的模态框。
+     * @returns {void}
+     */
+    function openModal(modalElement) {
+        modalElement.classList.add("is-open");
+        document.body.style.overflow = "hidden";
+        const focusTarget = modalElement.querySelector("button");
+        if (focusTarget) {
+            window.setTimeout(() => focusTarget.focus(), 30);
+        }
+    }
+
+    /**
+     * 关闭指定模态框并恢复页面滚动。
+     * @param {HTMLElement} modalElement 需要关闭的模态框。
+     * @returns {void}
+     */
+    function closeModal(modalElement) {
+        modalElement.classList.remove("is-open");
+        document.body.style.removeProperty("overflow");
+    }
+
+    /**
+     * 获取候选文本当前应显示的状态。
+     * @param {number} itemIndex 候选文本索引。
+     * @returns {string} 对应状态文案。
+     */
+    function getCandidateStatus(itemIndex) {
+        const attempt = getCurrentAttempt();
+        if (attempt.judgments[itemIndex] === "human") {
+            return "人类";
+        }
+        if (attempt.judgments[itemIndex] === "ai") {
+            return "AI";
+        }
+        if (attempt.currentIndex === itemIndex) {
+            return "阅读中";
+        }
+        if (attempt.visitedIndices.has(itemIndex)) {
+            return "已读";
+        }
+        return "未读";
+    }
+
+    /**
+     * 创建桌面端候选文本按钮。
+     * @param {number} itemIndex 候选文本索引。
+     * @returns {HTMLButtonElement} 已完成状态配置的按钮。
+     */
+    function createCandidateButton(itemIndex) {
+        const buttonElement = document.createElement("button");
+        buttonElement.type = "button";
+        buttonElement.className = "candidate-button";
+        buttonElement.dataset.index = String(itemIndex);
+        buttonElement.setAttribute("aria-label", `打开文本 ${LETTERS[itemIndex]}`);
+
+        const letterElement = document.createElement("span");
+        letterElement.className = "candidate-letter";
+        letterElement.textContent = LETTERS[itemIndex];
+
+        const nameElement = document.createElement("span");
+        nameElement.className = "candidate-name";
+        nameElement.textContent = `文本 ${LETTERS[itemIndex]}`;
+
+        const stateElement = document.createElement("span");
+        stateElement.className = "candidate-state";
+        stateElement.textContent = getCandidateStatus(itemIndex);
+
+        buttonElement.append(letterElement, nameElement, stateElement);
+        buttonElement.addEventListener("click", () => navigateTo(itemIndex));
+        return buttonElement;
+    }
+
+    /**
+     * 创建移动端候选文本标签。
+     * @param {number} itemIndex 候选文本索引。
+     * @returns {HTMLButtonElement} 移动端标签按钮。
+     */
+    function createMobileTab(itemIndex) {
+        const tabElement = document.createElement("button");
+        tabElement.type = "button";
+        tabElement.className = "mobile-tab";
+        tabElement.dataset.index = String(itemIndex);
+        tabElement.textContent = LETTERS[itemIndex];
+        tabElement.setAttribute("aria-label", `打开文本 ${LETTERS[itemIndex]}`);
+        tabElement.addEventListener("click", () => navigateTo(itemIndex));
+        return tabElement;
+    }
+
+    /**
+     * 首次建立候选导航节点。
+     * @returns {void}
+     */
+    function buildNavigation() {
+        const attempt = getCurrentAttempt();
+        const desktopFragment = document.createDocumentFragment();
+        const mobileFragment = document.createDocumentFragment();
+        attempt.items.forEach((item, itemIndex) => {
+            desktopFragment.appendChild(createCandidateButton(itemIndex));
+            mobileFragment.appendChild(createMobileTab(itemIndex));
+        });
+        elements.candidateList.replaceChildren(desktopFragment);
+        elements.mobileTabs.replaceChildren(mobileFragment);
+    }
+
+    /**
+     * 建立判断依据选择按钮。
+     * @returns {void}
+     */
+    function buildEvidenceOptions() {
+        const fragment = document.createDocumentFragment();
+        EVIDENCE_OPTIONS.forEach((evidenceOption) => {
+            const buttonElement = document.createElement("button");
+            buttonElement.type = "button";
+            buttonElement.className = "evidence-button";
+            buttonElement.dataset.evidenceId = evidenceOption.id;
+            buttonElement.textContent = evidenceOption.label;
+            buttonElement.setAttribute("aria-pressed", "false");
+            buttonElement.addEventListener("click", () => toggleEvidenceOption(evidenceOption.id));
+            fragment.appendChild(buttonElement);
+        });
+        elements.evidenceOptions.replaceChildren(fragment);
+    }
+
+    /**
+     * 建立模型加分题的候选项。
+     * @returns {void}
+     */
+    function buildModelOptions() {
+        const currentSuite = getCurrentSuite();
+        const fragment = document.createDocumentFragment();
+        const defaultOption = document.createElement("option");
+        defaultOption.value = "";
+        defaultOption.textContent = "暂不判断";
+        fragment.appendChild(defaultOption);
+
+        getAiAuthors(currentSuite).forEach((authorName) => {
+            const optionElement = document.createElement("option");
+            optionElement.value = authorName;
+            optionElement.textContent = getAuthorLabel(authorName);
+            fragment.appendChild(optionElement);
+        });
+        elements.modelGuessSelect.replaceChildren(fragment);
+    }
+
+    /**
+     * 更新候选导航中的当前、已读与已标记状态。
+     * @returns {void}
+     */
+    function updateNavigationView() {
+        const attempt = getCurrentAttempt();
+        elements.candidateList.querySelectorAll(".candidate-button").forEach((buttonElement, itemIndex) => {
+            const isCurrent = attempt.currentIndex === itemIndex;
+            const isSelected = attempt.judgments[itemIndex] === "human";
+            const isVisited = attempt.visitedIndices.has(itemIndex);
+            buttonElement.classList.toggle("is-current", isCurrent);
+            buttonElement.classList.toggle("is-selected", isSelected);
+            buttonElement.classList.toggle("is-ai", attempt.judgments[itemIndex] === "ai");
+            buttonElement.classList.toggle("is-visited", isVisited);
+            buttonElement.setAttribute("aria-current", isCurrent ? "true" : "false");
+            buttonElement.querySelector(".candidate-state").textContent = getCandidateStatus(itemIndex);
+        });
+
+        elements.mobileTabs.querySelectorAll(".mobile-tab").forEach((tabElement, itemIndex) => {
+            const isCurrent = attempt.currentIndex === itemIndex;
+            tabElement.classList.toggle("is-current", isCurrent);
+            tabElement.classList.toggle("is-selected", attempt.judgments[itemIndex] === "human");
+            tabElement.classList.toggle("is-ai", attempt.judgments[itemIndex] === "ai");
+            tabElement.setAttribute("aria-current", isCurrent ? "true" : "false");
+        });
+
+        elements.progressText.textContent = `${state.currentSuiteIndex + 1}/${TEST_SUITES.length}`;
+    }
+
+    /**
+     * 更新阅读区正文、标题和翻页按钮。
+     * @returns {void}
+     */
+    function updateReadingView() {
+        const attempt = getCurrentAttempt();
+        const currentSuite = getCurrentSuite();
+        const currentLetter = LETTERS[attempt.currentIndex];
+        const currentItem = attempt.items[attempt.currentIndex];
+        elements.paperTitle.textContent = `${currentSuite.displayCode} · 文本 ${currentLetter}`;
+        elements.paperText.textContent = currentItem.text;
+        elements.paperScroll.scrollTop = 0;
+        elements.previousButton.disabled = state.currentSuiteIndex === 0;
+        elements.nextButton.disabled = state.currentSuiteIndex === TEST_SUITES.length - 1;
+    }
+
+    /**
+     * 更新当前文本的人类标记按钮。
+     * @returns {void}
+     */
+    function updateMarkView() {
+        const attempt = getCurrentAttempt();
+        const currentJudgment = attempt.judgments[attempt.currentIndex];
+        const isMarkedHuman = currentJudgment === "human";
+        const isMarkedAi = currentJudgment === "ai";
+        elements.markHumanButton.classList.toggle("is-marked", isMarkedHuman);
+        elements.markAiButton.classList.toggle("is-marked", isMarkedAi);
+        elements.markHumanButton.setAttribute("aria-pressed", String(isMarkedHuman));
+        elements.markAiButton.setAttribute("aria-pressed", String(isMarkedAi));
+        elements.markButtonText.textContent = isMarkedHuman ? "已标记为人类文本" : "标记为人类文本";
+        elements.markAiButtonText.textContent = isMarkedAi ? "已标记为AI文本" : "标记为AI文本";
+    }
+
+    /**
+     * 更新判断依据按钮的选中视觉与可访问状态。
+     * @returns {void}
+     */
+    function updateEvidenceView() {
+        const attempt = getCurrentAttempt();
+        const selectedEvidence = attempt.evidenceSelections[attempt.currentIndex];
+        elements.evidenceOptions.querySelectorAll(".evidence-button").forEach((buttonElement) => {
+            const isActive = selectedEvidence.includes(buttonElement.dataset.evidenceId);
+            buttonElement.classList.toggle("is-active", isActive);
+            buttonElement.setAttribute("aria-pressed", String(isActive));
+        });
+    }
+
+    /**
+     * 更新当前文本的模型猜测选项与提示状态。
+     * @returns {void}
+     */
+    function updateModelGuessView() {
+        const attempt = getCurrentAttempt();
+        const isMarkedAi = attempt.judgments[attempt.currentIndex] === "ai";
+        elements.modelGuessSelect.disabled = !isMarkedAi;
+        elements.modelGuessSelect.value = attempt.modelGuesses[attempt.currentIndex] || "";
+    }
+
+    /**
+     * 刷新所有与当前状态相关的页面区域。
+     * @returns {void}
+     */
+    function renderState() {
+        buildNavigation();
+        buildModelOptions();
+        updateNavigationView();
+        updateReadingView();
+        updateMarkView();
+        updateEvidenceView();
+        updateModelGuessView();
+    }
+
+    /**
+     * 切换当前文本的一个判断依据。
+     * @param {string} evidenceId 判断依据标识。
+     * @returns {void}
+     */
+    function toggleEvidenceOption(evidenceId) {
+        const attempt = getCurrentAttempt();
+        const selectedEvidence = attempt.evidenceSelections[attempt.currentIndex];
+        const existingIndex = selectedEvidence.indexOf(evidenceId);
+        if (existingIndex !== -1) {
+            selectedEvidence.splice(existingIndex, 1);
+            updateEvidenceView();
+            return;
+        }
+        if (selectedEvidence.length >= MAX_EVIDENCE_PER_TEXT) {
+            showToast(`每段文本最多选择 ${MAX_EVIDENCE_PER_TEXT} 个判断依据`);
+            return;
+        }
+        selectedEvidence.push(evidenceId);
+        updateEvidenceView();
+    }
+
+    /**
+     * 切换到指定候选文本。
+     * @param {number} targetIndex 需要打开的文本索引。
+     * @returns {void}
+     */
+    function navigateTo(targetIndex) {
+        const attempt = getCurrentAttempt();
+        if (targetIndex < 0 || targetIndex >= attempt.items.length || targetIndex === attempt.currentIndex) {
+            return;
+        }
+        attempt.currentIndex = targetIndex;
+        attempt.visitedIndices.add(targetIndex);
+        renderState();
+        if (window.innerWidth <= 980) {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+    }
+
+    /**
+     * 设置当前文本的身份判定。
+     * @param {"human"|"ai"} judgment 当前文本身份判定。
+     * @returns {void}
+     */
+    function setCurrentJudgment(judgment) {
+        const attempt = getCurrentAttempt();
+        if (judgment === "human") {
+            attempt.judgments = attempt.judgments.map((currentJudgment, itemIndex) => (
+                itemIndex === attempt.currentIndex ? "human" : currentJudgment === "human" ? "ai" : currentJudgment
+            ));
+            attempt.modelGuesses[attempt.currentIndex] = "";
+            showToast(`已将文本 ${LETTERS[attempt.currentIndex]} 标记为人类文本`);
+        } else {
+            attempt.judgments[attempt.currentIndex] = "ai";
+            showToast(`已将文本 ${LETTERS[attempt.currentIndex]} 标记为AI文本`);
+        }
+        updateNavigationView();
+        updateMarkView();
+        updateModelGuessView();
+    }
+
+    /**
+     * 找出指定档案随机序列中的真实人类文本索引。
+     * @param {object} testSuite 测试档案配置。
+     * @param {object} attempt 档案作答状态。
+     * @returns {number} 人类文本所在索引。
+     */
+    function getHumanTextIndex(testSuite, attempt) {
+        return attempt.items.findIndex((item) => item.author === testSuite.humanAuthor);
+    }
+
+    /**
+     * 判断当前文本的判断依据是否匹配真实身份。
+     * @param {object} testSuite 测试档案配置。
+     * @param {object} item 当前文本数据。
+     * @param {Array<string>} selectedEvidence 当前文本选中的判断依据。
+     * @returns {boolean} 判断依据是否匹配真实身份。
+     */
+    function isEvidenceCorrect(testSuite, item, selectedEvidence) {
+        const targetEvidenceIds = item.author === testSuite.humanAuthor ? HUMAN_EVIDENCE_IDS : AI_EVIDENCE_IDS;
+        return selectedEvidence.some((evidenceId) => targetEvidenceIds.includes(evidenceId));
+    }
+
+    /**
+     * 计算单段文本的得分贡献。
+     * @param {object} testSuite 测试档案配置。
+     * @param {object} attempt 档案作答状态。
+     * @param {number} itemIndex 当前文本索引。
+     * @returns {{ total: number, human: number, ai: number, model: number, label: number }} 单段得分。
+     */
+    function calculateItemScore(testSuite, attempt, itemIndex) {
+        const item = attempt.items[itemIndex];
+        const selectedEvidence = attempt.evidenceSelections[itemIndex] || [];
+        const isHumanText = item.author === testSuite.humanAuthor;
+        const judgment = attempt.judgments[itemIndex];
+        const human = isHumanText && judgment === "human" ? HUMAN_SCORE : 0;
+        const ai = !isHumanText && judgment === "ai" ? AI_JUDGMENT_SCORE_PER_ITEM : 0;
+        const model = !isHumanText && judgment === "ai" && attempt.modelGuesses[itemIndex] === item.author
+            ? MODEL_SCORE_PER_ITEM
+            : 0;
+        const label = isEvidenceCorrect(testSuite, item, selectedEvidence) ? LABEL_SCORE_PER_ITEM : 0;
+        return {
+            total: human + ai + model + label,
+            human,
+            ai,
+            model,
+            label
+        };
+    }
+
+    /**
+     * 计算核心判断、模型加分项与总分。
+     * @param {object} testSuite 测试档案配置。
+     * @param {object} attempt 档案作答状态。
+     * @returns {{ totalScore: number, humanScore: number, aiScore: number, modelScore: number, labelScore: number, aiCorrectCount: number, modelCorrectCount: number, labelCorrectCount: number, isHumanCorrect: boolean }} 计分结果。
+     */
+    function calculateScore(testSuite, attempt) {
+        const humanTextIndex = getHumanTextIndex(testSuite, attempt);
+        const isHumanCorrect = attempt.judgments[humanTextIndex] === "human";
+        let humanScore = 0;
+        let aiScore = 0;
+        let modelScore = 0;
+        let labelScore = 0;
+        let aiCorrectCount = 0;
+        let modelCorrectCount = 0;
+        let labelCorrectCount = 0;
+
+        attempt.items.forEach((item, itemIndex) => {
+            const itemScore = calculateItemScore(testSuite, attempt, itemIndex);
+            humanScore += itemScore.human;
+            aiScore += itemScore.ai;
+            modelScore += itemScore.model;
+            labelScore += itemScore.label;
+            if (itemScore.ai > 0) {
+                aiCorrectCount += 1;
+            }
+            if (itemScore.model > 0) {
+                modelCorrectCount += 1;
+            }
+            if (itemScore.label > 0) {
+                labelCorrectCount += 1;
+            }
+        });
+
+        return {
+            totalScore: humanScore + aiScore + modelScore + labelScore,
+            humanScore,
+            aiScore,
+            modelScore,
+            labelScore,
+            aiCorrectCount,
+            modelCorrectCount,
+            labelCorrectCount,
+            isHumanCorrect
+        };
+    }
+
+    /**
+     * 创建结果中的单项分数卡片。
+     * @param {string} scoreText 分数字符串。
+     * @param {string} labelText 分数含义。
+     * @returns {HTMLDivElement} 分数卡片。
+     */
+    function createScoreCard(scoreText, labelText) {
+        const cardElement = document.createElement("div");
+        cardElement.className = "score-card";
+        const scoreElement = document.createElement("strong");
+        scoreElement.textContent = scoreText;
+        const labelElement = document.createElement("span");
+        labelElement.textContent = labelText;
+        cardElement.append(scoreElement, labelElement);
+        return cardElement;
+    }
+
+    /**
+     * 生成结果区中的判断依据文案。
+     * @param {object} attempt 档案作答状态。
+     * @param {number} itemIndex 当前文本索引。
+     * @returns {string} 判断依据文案。
+     */
+    function getEvidenceSummary(attempt, itemIndex) {
+        const selectedEvidence = attempt.evidenceSelections[itemIndex];
+        if (!selectedEvidence || selectedEvidence.length === 0) {
+            return "你的依据：未记录依据";
+        }
+        return `你的依据：${selectedEvidence.map(getEvidenceLabel).join("、")}`;
+    }
+
+    /**
+     * 创建结果区中的单行来源信息。
+     * @param {object} testSuite 测试档案配置。
+     * @param {object} attempt 档案作答状态。
+     * @param {object} item 当前文本数据。
+     * @param {number} itemIndex 当前文本索引。
+     * @returns {HTMLDivElement} 来源行元素。
+     */
+    function createAnswerRow(testSuite, attempt, item, itemIndex) {
+        const rowElement = document.createElement("div");
+        rowElement.className = "answer-row";
+        if (item.author === testSuite.humanAuthor) {
+            rowElement.classList.add("is-human");
+        }
+
+        const labelElement = document.createElement("span");
+        labelElement.className = "answer-label";
+        labelElement.textContent = `${testSuite.displayCode} · 文本 ${LETTERS[itemIndex]}`;
+
+        const authorElement = document.createElement("span");
+        authorElement.className = "answer-author";
+        authorElement.textContent = item.author === testSuite.humanAuthor
+            ? `${testSuite.humanLabel}（人类创作）`
+            : getAuthorLabel(item.author);
+
+        const tagElement = document.createElement("span");
+        tagElement.className = "answer-tag";
+        const modelGuess = attempt.modelGuesses[itemIndex];
+        if (item.author === testSuite.humanAuthor) {
+            tagElement.textContent = "正确答案";
+        } else if (modelGuess === item.author) {
+            tagElement.textContent = `模型命中 +${MODEL_SCORE_PER_ITEM}`;
+        } else if (modelGuess) {
+            tagElement.textContent = `你猜：${getAuthorLabel(modelGuess)}`;
+        } else {
+            tagElement.textContent = "未猜模型";
+        }
+
+        const evidenceElement = document.createElement("span");
+        evidenceElement.className = "answer-evidence";
+        evidenceElement.textContent = getEvidenceSummary(attempt, itemIndex);
+
+        const judgmentElement = document.createElement("span");
+        judgmentElement.className = "answer-judgment";
+        const itemScore = calculateItemScore(testSuite, attempt, itemIndex);
+        judgmentElement.textContent = `你的判定：${JUDGMENT_LABELS[attempt.judgments[itemIndex]] || "未判定"} · 本段得分 ${formatScore(itemScore.total)}`;
+
+        rowElement.append(labelElement, authorElement, tagElement, judgmentElement, evidenceElement);
+        return rowElement;
+    }
+
+    /**
+     * 计算指定文本选中的某类判断依据数量。
+     * @param {Array<string>} selectedEvidence 当前文本选中的判断依据。
+     * @param {Array<string>} targetEvidenceIds 目标依据标识列表。
+     * @returns {number} 命中的依据数量。
+     */
+    function countEvidenceMatches(selectedEvidence, targetEvidenceIds) {
+        return selectedEvidence.filter((evidenceId) => targetEvidenceIds.includes(evidenceId)).length;
+    }
+
+    /**
+     * 格式化分数，整数不显示小数。
+     * @param {number} scoreValue 分数数值。
+     * @returns {string} 分数文案。
+     */
+    function formatScore(scoreValue) {
+        return Number.isInteger(scoreValue) ? String(scoreValue) : scoreValue.toFixed(1);
+    }
+
+    /**
+     * 根据全部档案结果生成结局判定指标。
+     * @param {Array<object>} scoreResults 所有档案的计分结果。
+     * @param {number} totalScore 总分。
+     * @param {number} humanCorrectCount 人类识别正确档案数。
+     * @param {number} modelCorrectCount 模型命中数。
+     * @param {number} totalAiCount AI 文本总数。
+     * @returns {object} 结局判定指标。
+     */
+    function createEndingMetrics(scoreResults, totalScore, humanCorrectCount, modelCorrectCount, totalAiCount) {
+        let humanMissCount = 0;
+        let aiMarkedHumanCount = 0;
+        let humanEvidenceHitCount = 0;
+        let humanAiEvidenceMisreadCount = 0;
+
+        scoreResults.forEach((result) => {
+            const humanIndex = result.humanTextIndex;
+            const humanEvidence = result.attempt.evidenceSelections[humanIndex] || [];
+            const humanJudgment = result.attempt.judgments[humanIndex];
+            if (humanJudgment === "ai") {
+                humanMissCount += 1;
+            }
+            if (countEvidenceMatches(humanEvidence, HUMAN_EVIDENCE_IDS) >= 2) {
+                humanEvidenceHitCount += 1;
+            }
+            if (humanJudgment === "ai" && countEvidenceMatches(humanEvidence, AI_EVIDENCE_IDS) >= 2) {
+                humanAiEvidenceMisreadCount += 1;
+            }
+            result.attempt.items.forEach((item, itemIndex) => {
+                if (item.author !== result.testSuite.humanAuthor && result.attempt.judgments[itemIndex] === "human") {
+                    aiMarkedHumanCount += 1;
+                }
+            });
+        });
+
+        const suiteCount = scoreResults.length;
+        return {
+            suiteCount,
+            totalScore,
+            humanCorrectCount,
+            modelCorrectCount,
+            totalAiCount,
+            humanMissCount,
+            aiMarkedHumanCount,
+            humanEvidenceHitCount,
+            humanAiEvidenceMisreadCount,
+            humanRatio: suiteCount > 0 ? humanCorrectCount / suiteCount : 0,
+            modelRatio: totalAiCount > 0 ? modelCorrectCount / totalAiCount : 0,
+            scoreRatio: MAX_TOTAL_SCORE > 0 ? totalScore / MAX_TOTAL_SCORE : 0,
+            secondRun: isSecondRun()
+        };
+    }
+
+    /**
+     * 根据结局指标选择一个结局。
+     * @param {object} metrics 结局判定指标。
+     * @returns {object} 命中的结局定义。
+     */
+    function getEndingResult(metrics) {
+        const halfSuiteThreshold = Math.max(1, Math.ceil(metrics.suiteCount * 0.5));
+        const sabotageThreshold = Math.max(1, Math.ceil(metrics.suiteCount * 0.6));
+        if (metrics.secondRun && metrics.humanMissCount >= sabotageThreshold && metrics.modelRatio >= 0.5) {
+            return ENDING_DEFINITIONS.prometheus;
+        }
+        if (metrics.humanRatio === 1 && metrics.modelRatio === 1) {
+            return ENDING_DEFINITIONS.perfect;
+        }
+        if (metrics.humanRatio >= 0.75 && metrics.humanEvidenceHitCount >= halfSuiteThreshold) {
+            return ENDING_DEFINITIONS.traceScholar;
+        }
+        if (metrics.humanRatio >= 0.75 && metrics.modelRatio >= 0.75) {
+            return ENDING_DEFINITIONS.dismantler;
+        }
+        if (metrics.humanRatio === 1) {
+            return ENDING_DEFINITIONS.locator;
+        }
+        if (metrics.humanRatio >= 0.5 && metrics.modelRatio >= 0.75) {
+            return ENDING_DEFINITIONS.modelForensic;
+        }
+        if (metrics.humanRatio < 0.5 && metrics.humanAiEvidenceMisreadCount >= halfSuiteThreshold) {
+            return ENDING_DEFINITIONS.overfit;
+        }
+        if (metrics.humanRatio < 0.5 && metrics.modelRatio >= 0.5) {
+            return ENDING_DEFINITIONS.falseAlarm;
+        }
+        if (metrics.scoreRatio >= 0.6) {
+            return ENDING_DEFINITIONS.patrol;
+        }
+        return ENDING_DEFINITIONS.blank;
+    }
+
+    /**
+     * 记录一次完整结算，避免同一次结果弹窗重复累计。
+     * @returns {void}
+     */
+    function recordCompletedRun() {
+        if (state.hasRecordedCompletion) {
+            return;
+        }
+        state.completedRunCount += 1;
+        state.hasRecordedCompletion = true;
+        writeCompletedRunCount(state.completedRunCount);
+    }
+
+    /**
+     * 渲染并打开最终结果。
+     * @returns {void}
+     */
+    function renderResult() {
+        const scoreResults = TEST_SUITES.map((testSuite, suiteIndex) => {
+            const attempt = state.suiteStates[suiteIndex];
+            return {
+                testSuite,
+                attempt,
+                humanTextIndex: getHumanTextIndex(testSuite, attempt),
+                score: calculateScore(testSuite, attempt)
+            };
+        });
+        const totalScore = scoreResults.reduce((sum, result) => sum + result.score.totalScore, 0);
+        const humanCorrectCount = scoreResults.filter((result) => result.score.isHumanCorrect).length;
+        const aiCorrectCount = scoreResults.reduce((sum, result) => sum + result.score.aiCorrectCount, 0);
+        const modelCorrectCount = scoreResults.reduce((sum, result) => sum + result.score.modelCorrectCount, 0);
+        const labelCorrectCount = scoreResults.reduce((sum, result) => sum + result.score.labelCorrectCount, 0);
+        const totalAiCount = scoreResults.reduce((sum, result) => (
+            sum + result.attempt.items.filter((item) => item.author !== result.testSuite.humanAuthor).length
+        ), 0);
+        const endingMetrics = createEndingMetrics(scoreResults, totalScore, humanCorrectCount, modelCorrectCount, totalAiCount);
+        const endingResult = getEndingResult(endingMetrics);
+
+        elements.resultSeal.classList.remove("is-wrong", "is-special", "is-failed");
+        elements.resultSeal.classList.toggle("is-special", endingResult.tone === "special");
+        elements.resultSeal.classList.toggle("is-failed", endingResult.tone === "failed");
+        elements.resultSeal.textContent = endingResult.seal;
+        elements.resultTitle.textContent = `结局：${endingResult.title}`;
+        elements.resultSummary.textContent = `【${endingResult.state}】${endingResult.text}`;
+
+        const scoreFragment = document.createDocumentFragment();
+        const maxHumanScore = HUMAN_SCORE * TEST_SUITES.length;
+        const maxAiScore = AI_JUDGMENT_SCORE_PER_ITEM * totalAiCount;
+        const maxModelScore = MODEL_SCORE_PER_ITEM * totalAiCount;
+        const maxLabelScore = LABEL_SCORE_PER_ITEM * ITEMS_PER_ROUND * TEST_SUITES.length;
+        scoreFragment.append(
+            createScoreCard(`${formatScore(humanCorrectCount * HUMAN_SCORE)}/${formatScore(maxHumanScore)}`, "人类定位"),
+            createScoreCard(`${formatScore(aiCorrectCount * AI_JUDGMENT_SCORE_PER_ITEM)}/${formatScore(maxAiScore)}`, `AI 清除 ${aiCorrectCount}/${totalAiCount}`),
+            createScoreCard(`${formatScore(modelCorrectCount * MODEL_SCORE_PER_ITEM)}/${formatScore(maxModelScore)}`, `模型溯源 ${modelCorrectCount}/${totalAiCount}`),
+            createScoreCard(`${formatScore(labelCorrectCount * LABEL_SCORE_PER_ITEM)}/${formatScore(maxLabelScore)}`, `依据标注 ${labelCorrectCount}/${ITEMS_PER_ROUND * TEST_SUITES.length}`),
+            createScoreCard(`${formatScore(totalScore)}/${formatScore(MAX_TOTAL_SCORE)}`, "总评估")
+        );
+        elements.scoreBreakdown.replaceChildren(scoreFragment);
+
+        const fragment = document.createDocumentFragment();
+        scoreResults.forEach((result) => {
+            result.attempt.items.forEach((item, itemIndex) => {
+                fragment.appendChild(createAnswerRow(result.testSuite, result.attempt, item, itemIndex));
+            });
+        });
+        elements.answerGrid.replaceChildren(fragment);
+        openModal(elements.resultModal);
+        recordCompletedRun();
+    }
+
+    /**
+     * 检查提交条件并给出针对性反馈。
+     * @returns {void}
+     */
+    function handleSubmit() {
+        const incompleteSuiteIndex = state.suiteStates.findIndex((attempt) => attempt.judgments.some((judgment) => judgment === null));
+        if (incompleteSuiteIndex !== -1) {
+            const attempt = state.suiteStates[incompleteSuiteIndex];
+            const firstUnmarkedIndex = attempt.judgments.findIndex((judgment) => judgment === null);
+            state.currentSuiteIndex = incompleteSuiteIndex;
+            renderState();
+            showToast("请先为所有候选文本都标记人类或AI");
+            navigateTo(firstUnmarkedIndex);
+            return;
+        }
+        const invalidHumanCountSuiteIndex = state.suiteStates.findIndex((attempt) => (
+            attempt.judgments.filter((judgment) => judgment === "human").length !== 1
+        ));
+        if (invalidHumanCountSuiteIndex !== -1) {
+            state.currentSuiteIndex = invalidHumanCountSuiteIndex;
+            renderState();
+            showToast("每份档案必须恰好标记一段人类文本");
+            return;
+        }
+        const unreadSuiteIndex = state.suiteStates.findIndex((attempt) => attempt.visitedIndices.size < attempt.items.length);
+        if (unreadSuiteIndex !== -1) {
+            const attempt = state.suiteStates[unreadSuiteIndex];
+            const firstUnreadIndex = attempt.items.findIndex((item, itemIndex) => !attempt.visitedIndices.has(itemIndex));
+            state.currentSuiteIndex = unreadSuiteIndex;
+            renderState();
+            showToast("还有未阅读的文本");
+            navigateTo(firstUnreadIndex);
+            return;
+        }
+        renderResult();
+    }
+
+    /**
+     * 重置全部测试数据并重新随机排列文本。
+     * @returns {void}
+     */
+    function resetTest() {
+        state.currentSuiteIndex = 0;
+        state.suiteStates = TEST_SUITES.map(createSuiteAttempt);
+        state.hasRecordedCompletion = false;
+        closeModal(elements.resultModal);
+        renderState();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        showToast("测试已重新洗牌");
+    }
+
+    /**
+     * 切换到指定测试档案。
+     * @param {number} targetSuiteIndex 目标档案索引。
+     * @returns {void}
+     */
+    function navigateToSuite(targetSuiteIndex) {
+        if (targetSuiteIndex < 0 || targetSuiteIndex >= TEST_SUITES.length || targetSuiteIndex === state.currentSuiteIndex) {
+            return;
+        }
+        state.currentSuiteIndex = targetSuiteIndex;
+        renderState();
+        if (window.innerWidth <= 980) {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+    }
+
+    /**
+     * 根据键盘输入完成翻页和弹窗关闭。
+     * @param {KeyboardEvent} event 键盘事件。
+     * @returns {void}
+     */
+    function handleKeyboardNavigation(event) {
+        const targetElement = event.target;
+        if (targetElement instanceof HTMLTextAreaElement) {
+            return;
+        }
+        if (event.key === "ArrowLeft") {
+            navigateToSuite(state.currentSuiteIndex - 1);
+        } else if (event.key === "ArrowRight") {
+            navigateToSuite(state.currentSuiteIndex + 1);
+        } else if (/^[1-9]$/.test(event.key)) {
+            navigateTo(Number(event.key) - 1);
+        } else if (event.key.toLowerCase() === "m") {
+            setCurrentJudgment("human");
+        } else if (event.key.toLowerCase() === "a") {
+            setCurrentJudgment("ai");
+        } else if (event.key === "Escape") {
+            closeModal(elements.helpModal);
+            closeModal(elements.resultModal);
+        }
+    }
+
+    /**
+     * 绑定页面中所有固定交互事件。
+     * @returns {void}
+     */
+    function bindEvents() {
+        elements.markHumanButton.addEventListener("click", () => setCurrentJudgment("human"));
+        elements.markAiButton.addEventListener("click", () => setCurrentJudgment("ai"));
+        elements.previousButton.addEventListener("click", () => navigateToSuite(state.currentSuiteIndex - 1));
+        elements.nextButton.addEventListener("click", () => navigateToSuite(state.currentSuiteIndex + 1));
+        elements.submitButton.addEventListener("click", handleSubmit);
+        elements.openHelpButton.addEventListener("click", () => openModal(elements.helpModal));
+        elements.closeHelpButton.addEventListener("click", () => closeModal(elements.helpModal));
+        elements.continueButton.addEventListener("click", () => closeModal(elements.resultModal));
+        elements.restartButton.addEventListener("click", resetTest);
+        elements.modelGuessSelect.addEventListener("change", (event) => {
+            const attempt = getCurrentAttempt();
+            attempt.modelGuesses[attempt.currentIndex] = event.target.value;
+        });
+        [elements.helpModal, elements.resultModal].forEach((modalElement) => {
+            modalElement.addEventListener("click", (event) => {
+                if (event.target === modalElement) {
+                    closeModal(modalElement);
+                }
+            });
+        });
+        document.addEventListener("keydown", handleKeyboardNavigation);
+    }
+
+    /**
+     * 初始化测试界面和随机题目。
+     * @returns {void}
+     */
+    function initializeApp() {
+        state.completedRunCount = readCompletedRunCount();
+        state.suiteStates = TEST_SUITES.map(createSuiteAttempt);
+        buildEvidenceOptions();
+        bindEvents();
+        renderState();
+    }
+
+    try {
+        initializeApp();
+    } catch (error) {
+        console.error("[寻找人类] 页面初始化失败", error);
+        document.body.textContent = "页面初始化失败，请刷新后重试。";
+    }
+</script>
+</body>
+</html>
